@@ -1,0 +1,100 @@
+{
+  "Random Forest": {
+    "ranking": {
+      "elo_diff": 0.06383,
+      "ewm_sot_balance_diff": 0.01489,
+      "away_elo": 0.00257,
+      "home_elo": 0.00256,
+      "ewm_goal_diff_diff": 0.00216,
+      "away_ewm_sot_against": 0.00133,
+      "ewm_points_diff": 0.00021,
+      "away_ewm_sot_for": 0.00012,
+      "home_ewm_sot_against": 5e-05,
+      "away_ewm_goal_diff": 2e-05,
+      "home_ewm_sot_for": -2e-05,
+      "away_ewm_points": -2e-05,
+      "home_ewm_points": -7e-05,
+      "home_ewm_goal_diff": -8e-05
+    },
+    "curve": [
+      {
+        "k": 4,
+        "walk_forward_log_loss": 0.9764183425329229
+      },
+      {
+        "k": 8,
+        "walk_forward_log_loss": 0.974563114118698
+      },
+      {
+        "k": 12,
+        "walk_forward_log_loss": 0.9746936289161408
+      },
+      {
+        "k": 14,
+        "walk_forward_log_loss": 0.974923346908267
+      }
+    ],
+    "best_k": 8,
+    "selected_features": [
+      "elo_diff",
+      "ewm_sot_balance_diff",
+      "away_elo",
+      "home_elo",
+      "ewm_goal_diff_diff",
+      "away_ewm_sot_against",
+      "ewm_points_diff",
+      "away_ewm_sot_for"
+    ],
+    "validation_log_loss_all": 0.9892913565773191,
+    "validation_log_loss_selected": 0.9904782323249822
+  },
+  "XGBoost": {
+    "ranking": {
+      "elo_diff": 0.04537,
+      "ewm_sot_balance_diff": 0.015,
+      "home_elo": 0.00486,
+      "ewm_goal_diff_diff": 0.00277,
+      "away_elo": 0.00261,
+      "away_ewm_sot_against": 0.00174,
+      "home_ewm_sot_against": 0.00066,
+      "home_ewm_sot_for": 0.00051,
+      "away_ewm_sot_for": 0.00041,
+      "away_ewm_goal_diff": 0.00023,
+      "away_ewm_points": 3e-05,
+      "ewm_points_diff": -4e-05,
+      "home_ewm_points": -0.00034,
+      "home_ewm_goal_diff": -0.00068
+    },
+    "curve": [
+      {
+        "k": 4,
+        "walk_forward_log_loss": 0.976107943058014
+      },
+      {
+        "k": 8,
+        "walk_forward_log_loss": 0.9734889149665833
+      },
+      {
+        "k": 12,
+        "walk_forward_log_loss": 0.9741328477859497
+      },
+      {
+        "k": 14,
+        "walk_forward_log_loss": 0.9751131176948548
+      }
+    ],
+    "best_k": 8,
+    "selected_features": [
+      "elo_diff",
+      "ewm_sot_balance_diff",
+      "home_elo",
+      "ewm_goal_diff_diff",
+      "away_elo",
+      "away_ewm_sot_against",
+      "home_ewm_sot_against",
+      "home_ewm_sot_for"
+    ],
+    "validation_log_loss_all": 0.988575279712677,
+    "validation_log_loss_selected": 0.9895380139350891
+  }
+}

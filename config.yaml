@@ -1,0 +1,101 @@
+# Central configuration for the Premier League match predictor.
+# Paths are relative to the repository root.
+
+random_state: 42
+
+data:
+  league_code: E0            # Football-Data.co.uk code for the English Premier League
+  # Seasons are identified by their starting year: 2015 means 2015/16.
+  # Seasons before first_season are loaded only to warm up rolling features
+  # and Elo ratings (so the first training season does not start with every
+  # club rated the same); they are never used as training rows.
+  history_start_season: 2000
+  first_season: 2005         # first season whose matches become model rows
+  last_season: 2025          # most recent season to download
+  # Sources are tried in order. The official site is preferred; the GitHub
+  # mirror republishes the same E0 CSVs and is used when the official site
+  # is unreachable.
+  sources:
+    - name: football-data.co.uk
+      url_template: "https://www.football-data.co.uk/mmz4281/{code}/E0.csv"
+    - name: datasets/football-datasets (GitHub mirror)
+      url_template: "https://raw.githubusercontent.com/datasets/football-datasets/main/datasets/premier-league/season-{code}.csv"
+  raw_dir: data/raw
+  processed_dir: data/processed
+
+features:
+  form_window: 5             # "last 5 matches" form
+  venue_window: 10           # last N home (or away) matches for venue features
+  venue_min_periods: 3       # need at least this many venue matches, else NaN
+  use_diff_features: true    # home-minus-away comparison features
+  base_features: false       # the 42 Phase 3 features (form, season to date, venue, differences);
+                             # dropped: Elo + weighted form alone scored better on walk-forward seasons
+  # Optional groups on top of the base features (src/features/build_features.py):
+  #   elo      team strength that carries across seasons
+  #   ewm      exponentially weighted form, incl. shots on target conceded
+  #   context  rest days, unbeaten/winless runs, last season's finish, head-to-head
+  # Chosen with python -m src.experiments on walk-forward seasons only.
+  groups: [elo, ewm]
+  ewm_halflife: 5            # matches; a match 5 games ago counts half as much as the last one
+  elo:                       # chosen on training seasons 2003/04-2023/24 (squared error of expected score)
+    k: 12
+    home_advantage: 60
+    season_regression: 0.15
+
+split:
+  train_seasons: [2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014,
+                  2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023]
+  validation_season: 2024
+  test_season: 2025
+  # Walk-forward folds used for hyperparameter tuning: train on every
+  # training season before N, validate on N.
+  walk_forward_validation_seasons: [2019, 2020, 2021, 2022, 2023]
+
+# How probabilities become one predicted outcome (src/models/decision.py).
+# Probabilities, log loss and betting are unaffected either way.
+decision:
+  # true: predict a draw when its probability reaches a threshold chosen on
+  # the walk-forward seasons (macro F1). false: plain argmax, which almost
+  # never predicts a draw.
+  draw_rule: true
+
+tuning:
+  random_forest_iterations: 15
+  xgboost_iterations: 30
+
+output:
+  models_dir: models
+  reports_dir: reports
+
+# Bookmaker odds: a benchmark and a betting market only, never a model input.
+odds:
+  # football-data.co.uk odds, republished with the original columns renamed.
+  url: "https://raw.githubusercontent.com/AnishKhetani/premier-league-data/main/data/processed/results_with_odds.csv"
+  cache: data/raw/odds_E0.csv
+  bookmaker: bet365            # pre-match odds exist for every season
+  stake: 100                   # flat stake per bet in the betting simulation
+  value_edge: 0.05             # bet only when model probability x odds - 1 exceeds this
+
+# Live predictions for the season in progress.
+live:
+  # Fixture list and kickoff times (also results, goals only). {label} is e.g. 2026-27.
+  schedule_url_template: "https://raw.githubusercontent.com/openfootball/football.json/master/{label}/en.1.json"
+  timezone: Europe/London        # kickoff times in the schedule are UK local time
+  horizon_days: 14               # predict fixtures kicking off within this many days
+  stale_result_hours: 48         # a past fixture without a result after this long means the feed is behind
+  history_path: data/predictions/prediction_history.csv
+
+# Used only by python -m src.experiments (never by the production models).
+experiments:
+  other_leagues:
+    raw_dir: data/raw/other_leagues
+    leagues:
+      - {name: La Liga, slug: la-liga, code: SP1}
+      - {name: Bundesliga, slug: bundesliga, code: D1}
+      - {name: Serie A, slug: serie-a, code: I1}
+      - {name: Ligue 1, slug: ligue-1, code: F1}
+    sources:
+      - name: football-data.co.uk
+        url_template: "https://www.football-data.co.uk/mmz4281/{code}/{league_code}.csv"
+      - name: datasets/football-datasets (GitHub mirror)
+        url_template: "https://raw.githubusercontent.com/datasets/football-datasets/main/datasets/{league}/season-{code}.csv"

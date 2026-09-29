@@ -1,0 +1,29 @@
+{
+  "source": "https://github.com/stogaja/Football-Match-Outcome-Predictor",
+  "seasons": "2009/10 to 2018/19",
+  "matches": 3800,
+  "split": "random 80/20, as in the original",
+  "results": [
+    {
+      "inputs": "Their inputs: team ids, half-time score, same-match shots, shots on target, red cards",
+      "random_forest_accuracy": 0.6394736842105263,
+      "logistic_regression_accuracy": 0.6736842105263158
+    },
+    {
+      "inputs": "Half-time score only",
+      "random_forest_accuracy": 0.6065789473684211,
+      "logistic_regression_accuracy": 0.6328947368421053
+    },
+    {
+      "inputs": "Same-match shots on target and red cards only",
+      "random_forest_accuracy": 0.531578947368421,
+      "logistic_regression_accuracy": 0.5697368421052632
+    },
+    {
+      "inputs": "Team ids only (the only pre-match information in their inputs)",
+      "random_forest_accuracy": 0.4842105263157895,
+      "logistic_regression_accuracy": 0.4644736842105263
+    }
+  ],
+  "draw_share": 0.24736842105263157
+}

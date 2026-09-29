@@ -1,0 +1,319 @@
+{
+  "folds": [
+    2019,
+    2020,
+    2021,
+    2022,
+    2023
+  ],
+  "results": [
+    {
+      "experiment": "Phase 3 setup",
+      "note": "42 features, trained from 2015/16",
+      "n_features": 42,
+      "train_start": "2015/16",
+      "Random Forest log loss": 0.9924290852386713,
+      "Random Forest accuracy": 0.5236842105263159,
+      "Random Forest draws predicted": 0.0005263157894736842,
+      "Random Forest per season": [
+        1.0044,
+        1.0386,
+        0.9892,
+        0.9811,
+        0.9489
+      ],
+      "XGBoost log loss": 0.9938520193099976,
+      "XGBoost accuracy": 0.5263157894736843,
+      "XGBoost draws predicted": 0.0015789473684210526,
+      "XGBoost per season": [
+        1.0067,
+        1.0382,
+        0.9931,
+        0.9817,
+        0.9496
+      ]
+    },
+    {
+      "experiment": "+ more history",
+      "note": "same features, trained from 2005/06",
+      "n_features": 42,
+      "train_start": "2005/06",
+      "Random Forest log loss": 0.9914253780232215,
+      "Random Forest accuracy": 0.5242105263157895,
+      "Random Forest draws predicted": 0.0,
+      "Random Forest per season": [
+        0.9993,
+        1.0406,
+        0.989,
+        0.9737,
+        0.9546
+      ],
+      "XGBoost log loss": 0.9902743935585022,
+      "XGBoost accuracy": 0.528421052631579,
+      "XGBoost draws predicted": 0.0,
+      "XGBoost per season": [
+        0.9965,
+        1.0367,
+        0.9905,
+        0.9732,
+        0.9544
+      ]
+    },
+    {
+      "experiment": "+ Elo ratings",
+      "note": "",
+      "n_features": 45,
+      "train_start": "2005/06",
+      "Random Forest log loss": 0.9791318170701061,
+      "Random Forest accuracy": 0.5352631578947368,
+      "Random Forest draws predicted": 0.0,
+      "Random Forest per season": [
+        0.9873,
+        1.0332,
+        0.9669,
+        0.9699,
+        0.9383
+      ],
+      "XGBoost log loss": 0.9791296482086181,
+      "XGBoost accuracy": 0.5336842105263158,
+      "XGBoost draws predicted": 0.0,
+      "XGBoost per season": [
+        0.9836,
+        1.0295,
+        0.9693,
+        0.9703,
+        0.9429
+      ]
+    },
+    {
+      "experiment": "+ weighted form",
+      "note": "exponentially weighted form incl. shots conceded",
+      "n_features": 56,
+      "train_start": "2005/06",
+      "Random Forest log loss": 0.9766039696113069,
+      "Random Forest accuracy": 0.5368421052631579,
+      "Random Forest draws predicted": 0.0,
+      "Random Forest per season": [
+        0.9817,
+        1.0332,
+        0.9663,
+        0.9672,
+        0.9347
+      ],
+      "XGBoost log loss": 0.9769397974014282,
+      "XGBoost accuracy": 0.5326315789473685,
+      "XGBoost draws predicted": 0.0,
+      "XGBoost per season": [
+        0.98,
+        1.0301,
+        0.9685,
+        0.967,
+        0.9391
+      ]
+    },
+    {
+      "experiment": "+ match context",
+      "note": "rest days, unbeaten/winless runs, last season's finish, head-to-head",
+      "n_features": 66,
+      "train_start": "2005/06",
+      "Random Forest log loss": 0.9765437694965818,
+      "Random Forest accuracy": 0.5357894736842105,
+      "Random Forest draws predicted": 0.0,
+      "Random Forest per season": [
+        0.9816,
+        1.0325,
+        0.9668,
+        0.9668,
+        0.935
+      ],
+      "XGBoost log loss": 0.9766260504722595,
+      "XGBoost accuracy": 0.5357894736842105,
+      "XGBoost draws predicted": 0.0,
+      "XGBoost per season": [
+        0.9815,
+        1.0292,
+        0.967,
+        0.9666,
+        0.9388
+      ]
+    },
+    {
+      "experiment": "Elo + weighted form only",
+      "note": "the '+ weighted form' setup without the 42 Phase 3 features",
+      "n_features": 14,
+      "train_start": "2005/06",
+      "Random Forest log loss": 0.9757478281851559,
+      "Random Forest accuracy": 0.5315789473684212,
+      "Random Forest draws predicted": 0.0,
+      "Random Forest per season": [
+        0.9785,
+        1.0362,
+        0.963,
+        0.9684,
+        0.9326
+      ],
+      "XGBoost log loss": 0.9764465928077698,
+      "XGBoost accuracy": 0.5321052631578949,
+      "XGBoost draws predicted": 0.0,
+      "XGBoost per season": [
+        0.9781,
+        1.0313,
+        0.9654,
+        0.9707,
+        0.9367
+      ]
+    },
+    {
+      "experiment": "+ other top leagues",
+      "note": "the '+ weighted form' setup with La Liga, Bundesliga, Serie A and Ligue 1 matches added to training; still scored on the Premier League only",
+      "n_features": 56,
+      "train_start": "2005/06",
+      "Random Forest log loss": 0.9766127551778494,
+      "Random Forest accuracy": 0.531578947368421,
+      "Random Forest draws predicted": 0.0,
+      "Random Forest per season": [
+        0.9772,
+        1.0371,
+        0.963,
+        0.9727,
+        0.9331
+      ],
+      "XGBoost log loss": 0.9759926795959473,
+      "XGBoost accuracy": 0.5305263157894736,
+      "XGBoost draws predicted": 0.0,
+      "XGBoost per season": [
+        0.9746,
+        1.0346,
+        0.9632,
+        0.9732,
+        0.9344
+      ]
+    },
+    {
+      "experiment": "+ bookmaker odds as inputs",
+      "note": "the '+ weighted form' setup plus Bet365's implied probabilities; would need live odds for real predictions",
+      "n_features": 59,
+      "train_start": "2005/06",
+      "Random Forest log loss": 0.9621490699068815,
+      "Random Forest accuracy": 0.5468421052631578,
+      "Random Forest draws predicted": 0.0,
+      "Random Forest per season": [
+        0.9683,
+        1.0179,
+        0.9462,
+        0.9646,
+        0.9137
+      ],
+      "XGBoost log loss": 0.962738835811615,
+      "XGBoost accuracy": 0.5494736842105262,
+      "XGBoost draws predicted": 0.0,
+      "XGBoost per season": [
+        0.966,
+        1.014,
+        0.9524,
+        0.9622,
+        0.9191
+      ]
+    }
+  ],
+  "bookmaker": {
+    "log_loss": 0.9585672492069763,
+    "accuracy": 0.5552631578947368,
+    "draws_predicted": 0.0
+  },
+  "elo_tuning": {
+    "best": {
+      "k": 12.0,
+      "home_advantage": 60.0,
+      "season_regression": 0.15,
+      "squared_error": 0.15127057620673115
+    },
+    "top10": [
+      {
+        "k": 12,
+        "home_advantage": 60,
+        "season_regression": 0.15,
+        "squared_error": 0.15127057620673115
+      },
+      {
+        "k": 12,
+        "home_advantage": 70,
+        "season_regression": 0.15,
+        "squared_error": 0.15127395899249318
+      },
+      {
+        "k": 12,
+        "home_advantage": 70,
+        "season_regression": 0.1,
+        "squared_error": 0.15132799516161938
+      },
+      {
+        "k": 10,
+        "home_advantage": 70,
+        "season_regression": 0.1,
+        "squared_error": 0.15133749600101007
+      },
+      {
+        "k": 10,
+        "home_advantage": 60,
+        "season_regression": 0.1,
+        "squared_error": 0.15134234581016806
+      },
+      {
+        "k": 10,
+        "home_advantage": 60,
+        "season_regression": 0.15,
+        "squared_error": 0.15135912226537196
+      },
+      {
+        "k": 12,
+        "home_advantage": 60,
+        "season_regression": 0.1,
+        "squared_error": 0.15136079947551417
+      },
+      {
+        "k": 15,
+        "home_advantage": 70,
+        "season_regression": 0.15,
+        "squared_error": 0.1513743380887281
+      },
+      {
+        "k": 12,
+        "home_advantage": 60,
+        "season_regression": 0.2,
+        "squared_error": 0.15138850565844775
+      },
+      {
+        "k": 10,
+        "home_advantage": 70,
+        "season_regression": 0.15,
+        "squared_error": 0.1513953225548817
+      }
+    ],
+    "seasons": [
+      "2003/04",
+      "2023/24"
+    ]
+  },
+  "hyperparameters": {
+    "Random Forest": {
+      "n_estimators": 500,
+      "min_samples_split": 10,
+      "min_samples_leaf": 20,
+      "max_features": 0.3,
+      "max_depth": 4,
+      "class_weight": null
+    },
+    "XGBoost": {
+      "subsample": 0.6,
+      "reg_lambda": 1.0,
+      "reg_alpha": 0,
+      "n_estimators": 300,
+      "min_child_weight": 10,
+      "max_depth": 2,
+      "learning_rate": 0.01,
+      "gamma": 0,
+      "colsample_bytree": 0.5
+    }
+  }
+}
