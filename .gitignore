@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Generated data (raw CSVs are committed for reproducibility)
+data/processed/*
+!data/processed/.gitkeep
+
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

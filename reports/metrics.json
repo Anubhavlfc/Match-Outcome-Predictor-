@@ -1,0 +1,562 @@
+{
+  "validation": {
+    "Always Home Win": {
+      "n": 380,
+      "accuracy": 0.40789473684210525,
+      "macro_f1": 0.19314641744548286,
+      "log_loss": NaN,
+      "brier": NaN,
+      "ece": NaN,
+      "confusion_matrix": [
+        [
+          0,
+          0,
+          132
+        ],
+        [
+          0,
+          0,
+          93
+        ],
+        [
+          0,
+          0,
+          155
+        ]
+      ],
+      "predicted_share": {
+        "Away Win": 0.0,
+        "Draw": 0.0,
+        "Home Win": 1.0
+      },
+      "per_class": {
+        "Away Win": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 132
+        },
+        "Draw": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 93
+        },
+        "Home Win": {
+          "precision": 0.40789473684210525,
+          "recall": 1.0,
+          "f1": 0.5794392523364486,
+          "support": 155
+        }
+      }
+    },
+    "Class frequencies": {
+      "n": 380,
+      "accuracy": 0.40789473684210525,
+      "macro_f1": 0.19314641744548286,
+      "log_loss": 1.0810879896180008,
+      "brier": 0.6557306521664786,
+      "ece": 0.0412280701754385,
+      "confusion_matrix": [
+        [
+          0,
+          0,
+          132
+        ],
+        [
+          0,
+          0,
+          93
+        ],
+        [
+          0,
+          0,
+          155
+        ]
+      ],
+      "predicted_share": {
+        "Away Win": 0.0,
+        "Draw": 0.0,
+        "Home Win": 1.0
+      },
+      "per_class": {
+        "Away Win": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 132
+        },
+        "Draw": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 93
+        },
+        "Home Win": {
+          "precision": 0.40789473684210525,
+          "recall": 1.0,
+          "f1": 0.5794392523364486,
+          "support": 155
+        }
+      }
+    },
+    "Random Forest": {
+      "n": 380,
+      "accuracy": 0.5289473684210526,
+      "macro_f1": 0.3961256094599391,
+      "log_loss": 1.0064188294814211,
+      "brier": 0.6023494246108899,
+      "ece": 0.05954038374645853,
+      "confusion_matrix": [
+        [
+          74,
+          0,
+          58
+        ],
+        [
+          35,
+          0,
+          58
+        ],
+        [
+          28,
+          0,
+          127
+        ]
+      ],
+      "predicted_share": {
+        "Away Win": 0.3605263157894737,
+        "Draw": 0.0,
+        "Home Win": 0.6394736842105263
+      },
+      "per_class": {
+        "Away Win": {
+          "precision": 0.5401459854014599,
+          "recall": 0.5606060606060606,
+          "f1": 0.550185873605948,
+          "support": 132
+        },
+        "Draw": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 93
+        },
+        "Home Win": {
+          "precision": 0.522633744855967,
+          "recall": 0.8193548387096774,
+          "f1": 0.6381909547738693,
+          "support": 155
+        }
+      }
+    },
+    "XGBoost": {
+      "n": 380,
+      "accuracy": 0.5368421052631579,
+      "macro_f1": 0.4014357053682896,
+      "log_loss": 1.008849024772644,
+      "brier": 0.6034207083889472,
+      "ece": 0.07200087175557487,
+      "confusion_matrix": [
+        [
+          74,
+          0,
+          58
+        ],
+        [
+          36,
+          0,
+          57
+        ],
+        [
+          25,
+          0,
+          130
+        ]
+      ],
+      "predicted_share": {
+        "Away Win": 0.35526315789473684,
+        "Draw": 0.0,
+        "Home Win": 0.6447368421052632
+      },
+      "per_class": {
+        "Away Win": {
+          "precision": 0.5481481481481482,
+          "recall": 0.5606060606060606,
+          "f1": 0.5543071161048689,
+          "support": 132
+        },
+        "Draw": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 93
+        },
+        "Home Win": {
+          "precision": 0.5306122448979592,
+          "recall": 0.8387096774193549,
+          "f1": 0.65,
+          "support": 155
+        }
+      }
+    }
+  },
+  "test": {
+    "Always Home Win": {
+      "n": 380,
+      "accuracy": 0.4263157894736842,
+      "macro_f1": 0.1992619926199262,
+      "log_loss": NaN,
+      "brier": NaN,
+      "ece": NaN,
+      "confusion_matrix": [
+        [
+          0,
+          0,
+          114
+        ],
+        [
+          0,
+          0,
+          104
+        ],
+        [
+          0,
+          0,
+          162
+        ]
+      ],
+      "predicted_share": {
+        "Away Win": 0.0,
+        "Draw": 0.0,
+        "Home Win": 1.0
+      },
+      "per_class": {
+        "Away Win": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 114
+        },
+        "Draw": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 104
+        },
+        "Home Win": {
+          "precision": 0.4263157894736842,
+          "recall": 1.0,
+          "f1": 0.5977859778597786,
+          "support": 162
+        }
+      }
+    },
+    "Class frequencies": {
+      "n": 380,
+      "accuracy": 0.4263157894736842,
+      "macro_f1": 0.1992619926199262,
+      "log_loss": 1.0837830487333295,
+      "brier": 0.6558203601108034,
+      "ece": 0.01868421052631586,
+      "confusion_matrix": [
+        [
+          0,
+          0,
+          114
+        ],
+        [
+          0,
+          0,
+          104
+        ],
+        [
+          0,
+          0,
+          162
+        ]
+      ],
+      "predicted_share": {
+        "Away Win": 0.0,
+        "Draw": 0.0,
+        "Home Win": 1.0
+      },
+      "per_class": {
+        "Away Win": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 114
+        },
+        "Draw": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 104
+        },
+        "Home Win": {
+          "precision": 0.4263157894736842,
+          "recall": 1.0,
+          "f1": 0.5977859778597786,
+          "support": 162
+        }
+      }
+    },
+    "Random Forest": {
+      "n": 380,
+      "accuracy": 0.46578947368421053,
+      "macro_f1": 0.3461416824794434,
+      "log_loss": 1.0360791499751105,
+      "brier": 0.6233811527591122,
+      "ece": 0.03876562051644818,
+      "confusion_matrix": [
+        [
+          54,
+          0,
+          60
+        ],
+        [
+          41,
+          0,
+          63
+        ],
+        [
+          39,
+          0,
+          123
+        ]
+      ],
+      "predicted_share": {
+        "Away Win": 0.3526315789473684,
+        "Draw": 0.0,
+        "Home Win": 0.6473684210526316
+      },
+      "per_class": {
+        "Away Win": {
+          "precision": 0.40298507462686567,
+          "recall": 0.47368421052631576,
+          "f1": 0.43548387096774194,
+          "support": 114
+        },
+        "Draw": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 104
+        },
+        "Home Win": {
+          "precision": 0.5,
+          "recall": 0.7592592592592593,
+          "f1": 0.6029411764705882,
+          "support": 162
+        }
+      }
+    },
+    "XGBoost": {
+      "n": 380,
+      "accuracy": 0.47368421052631576,
+      "macro_f1": 0.3513183375539997,
+      "log_loss": 1.0377060174942017,
+      "brier": 0.623988094210268,
+      "ece": 0.025860051340178436,
+      "confusion_matrix": [
+        [
+          54,
+          0,
+          60
+        ],
+        [
+          41,
+          0,
+          63
+        ],
+        [
+          36,
+          0,
+          126
+        ]
+      ],
+      "predicted_share": {
+        "Away Win": 0.3447368421052632,
+        "Draw": 0.0,
+        "Home Win": 0.6552631578947369
+      },
+      "per_class": {
+        "Away Win": {
+          "precision": 0.4122137404580153,
+          "recall": 0.47368421052631576,
+          "f1": 0.44081632653061226,
+          "support": 114
+        },
+        "Draw": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "support": 104
+        },
+        "Home Win": {
+          "precision": 0.5060240963855421,
+          "recall": 0.7777777777777778,
+          "f1": 0.6131386861313869,
+          "support": 162
+        }
+      }
+    }
+  },
+  "hyperparameters": {
+    "Random Forest": {
+      "n_estimators": 500,
+      "min_samples_split": 10,
+      "min_samples_leaf": 20,
+      "max_features": 0.3,
+      "max_depth": 4,
+      "class_weight": null
+    },
+    "XGBoost": {
+      "subsample": 0.6,
+      "reg_lambda": 1.0,
+      "reg_alpha": 0,
+      "n_estimators": 300,
+      "min_child_weight": 10,
+      "max_depth": 2,
+      "learning_rate": 0.01,
+      "gamma": 0,
+      "colsample_bytree": 0.5
+    }
+  },
+  "walk_forward": [
+    {
+      "validation_season": 2019,
+      "accuracy": 0.49736842105263157,
+      "log_loss": 1.0044294931378903,
+      "model": "Random Forest"
+    },
+    {
+      "validation_season": 2020,
+      "accuracy": 0.46578947368421053,
+      "log_loss": 1.0385538953325384,
+      "model": "Random Forest"
+    },
+    {
+      "validation_season": 2021,
+      "accuracy": 0.5342105263157895,
+      "log_loss": 0.9891725564979484,
+      "model": "Random Forest"
+    },
+    {
+      "validation_season": 2022,
+      "accuracy": 0.5447368421052632,
+      "log_loss": 0.981114407372646,
+      "model": "Random Forest"
+    },
+    {
+      "validation_season": 2023,
+      "accuracy": 0.5763157894736842,
+      "log_loss": 0.9488750738523334,
+      "model": "Random Forest"
+    },
+    {
+      "validation_season": 2019,
+      "accuracy": 0.5,
+      "log_loss": 1.0067124366760254,
+      "model": "XGBoost"
+    },
+    {
+      "validation_season": 2020,
+      "accuracy": 0.4710526315789474,
+      "log_loss": 1.038246989250183,
+      "model": "XGBoost"
+    },
+    {
+      "validation_season": 2021,
+      "accuracy": 0.5368421052631579,
+      "log_loss": 0.9930604696273804,
+      "model": "XGBoost"
+    },
+    {
+      "validation_season": 2022,
+      "accuracy": 0.5447368421052632,
+      "log_loss": 0.9816573262214661,
+      "model": "XGBoost"
+    },
+    {
+      "validation_season": 2023,
+      "accuracy": 0.5789473684210527,
+      "log_loss": 0.9495828747749329,
+      "model": "XGBoost"
+    },
+    {
+      "validation_season": 2019,
+      "accuracy": 0.45263157894736844,
+      "log_loss": 1.0645060590262054,
+      "model": "Class frequencies"
+    },
+    {
+      "validation_season": 2020,
+      "accuracy": 0.37894736842105264,
+      "log_loss": 1.0889988081328643,
+      "model": "Class frequencies"
+    },
+    {
+      "validation_season": 2021,
+      "accuracy": 0.42894736842105263,
+      "log_loss": 1.0694653664347,
+      "model": "Class frequencies"
+    },
+    {
+      "validation_season": 2022,
+      "accuracy": 0.4842105263157895,
+      "log_loss": 1.0509836905117582,
+      "model": "Class frequencies"
+    },
+    {
+      "validation_season": 2023,
+      "accuracy": 0.4605263157894737,
+      "log_loss": 1.05404355376108,
+      "model": "Class frequencies"
+    }
+  ],
+  "ablation": [
+    {
+      "Model": "Random Forest",
+      "Features": "individual only (34)",
+      "Accuracy": 0.5131578947368421,
+      "Macro F1": 0.38311485642946314,
+      "Log Loss": 1.0191042458643982
+    },
+    {
+      "Model": "XGBoost",
+      "Features": "individual only (34)",
+      "Accuracy": 0.5105263157894737,
+      "Macro F1": 0.37814751067763114,
+      "Log Loss": 1.0183991193771362
+    },
+    {
+      "Model": "Random Forest",
+      "Features": "individual + diffs (42)",
+      "Accuracy": 0.5289473684210526,
+      "Macro F1": 0.3961256094599391,
+      "Log Loss": 1.0064188294814211
+    },
+    {
+      "Model": "XGBoost",
+      "Features": "individual + diffs (42)",
+      "Accuracy": 0.5368421052631579,
+      "Macro F1": 0.4014357053682896,
+      "Log Loss": 1.008849024772644
+    }
+  ],
+  "selected_model": "Random Forest",
+  "rf_minus_xgb_log_loss": {
+    "validation": {
+      "mean": -0.0024302683069128373,
+      "ci_low": -0.0074857378374463684,
+      "ci_high": 0.0028777633202327992
+    },
+    "test": {
+      "mean": -0.0016268312073141062,
+      "ci_low": -0.007697743254448763,
+      "ci_high": 0.004193124620310607
+    }
+  }
+}
