@@ -36,7 +36,7 @@ from src.data.clean import TARGET_LABELS, build_match_table
 from src.data.collect import collect_seasons, raw_path
 from src.features.build_features import build_features, feature_columns
 from src.models import evaluate as ev
-from src.models.split import season_split
+from src.models.split import season_split, walk_forward_folds
 from src.models.train_random_forest import (
     save_random_forest,
     train_random_forest,
@@ -53,6 +53,17 @@ MODEL_NAMES = ("Random Forest", "XGBoost")
 def _fit(name: str, X: pd.DataFrame, y: pd.Series, params: dict[str, Any], seed: int):
     trainer = train_random_forest if name == "Random Forest" else train_xgboost
     return trainer(X, y, params, seed)
+
+
+def _prediction_frame(rows: pd.DataFrame, model: str, stage: str, proba: np.ndarray) -> pd.DataFrame:
+    """Out-of-sample probabilities for one model on one block of matches."""
+    frame = rows[["match_id", "season", "date", "home_team", "away_team", "target"]].copy()
+    frame["model"], frame["stage"] = model, stage
+    # XGBoost returns float32 probabilities; store them as float64 rows that sum to exactly 1.
+    proba = np.asarray(proba, dtype=float)
+    proba = proba / proba.sum(axis=1, keepdims=True)
+    frame["p_away"], frame["p_draw"], frame["p_home"] = proba[:, 0], proba[:, 1], proba[:, 2]
+    return frame
 
 
 def _walk_forward_summary(search_results: pd.DataFrame, best_params: dict[str, Any]) -> pd.DataFrame:
@@ -155,6 +166,19 @@ def run(config_path: str | None = None, quick: bool = False, force_download: boo
     test_results = ev.baseline_metrics(y_full, y_test)
     test_results.update({name: ev.compute_metrics(y_test, proba) for name, proba in test_probas.items()})
 
+    # Every prediction below was made by a model that had not seen that season.
+    # The odds benchmark and betting simulation (src.final_report) use them.
+    out_of_sample = []
+    for season, train_idx, val_idx in walk_forward_folds(split.train["season"], wf_seasons):
+        for name in MODEL_NAMES:
+            model = _fit(name, X_train.iloc[train_idx], y_train.iloc[train_idx], best_params[name], seed)
+            out_of_sample.append(_prediction_frame(split.train.iloc[val_idx], name, "walk-forward",
+                                                   model.predict_proba(X_train.iloc[val_idx])))
+    for name in MODEL_NAMES:
+        out_of_sample.append(_prediction_frame(split.validation, name, "validation", val_probas[name]))
+        out_of_sample.append(_prediction_frame(split.test, name, "test", test_probas[name]))
+    pd.concat(out_of_sample, ignore_index=True).to_csv(processed_dir / "out_of_sample_predictions.csv", index=False)
+
     selected = min(MODEL_NAMES, key=lambda name: val_results[name]["log_loss"])
     gaps = {
         "validation": ev.paired_bootstrap_logloss_diff(y_val.to_numpy(), val_probas["Random Forest"],
@@ -204,6 +228,9 @@ def run(config_path: str | None = None, quick: bool = False, force_download: boo
         "walk_forward": walk_forward.to_dict(orient="records"),
         "ablation": ablation.to_dict(orient="records"),
         "selected_model": selected, "rf_minus_xgb_log_loss": gaps,
+        "permutation_importance_validation": {
+            name: table["importance"].round(5).to_dict() for name, table in importances.items()
+        },
     }
     (reports_dir / "metrics.json").write_text(json.dumps(metrics, indent=2, default=str))
 

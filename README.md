@@ -2,7 +2,9 @@
 
 A reproducible machine-learning pipeline that predicts **Home Win / Draw / Away Win** probabilities for English Premier League matches, using only information that was available before kickoff. It compares a **Random Forest** and an **XGBoost** classifier against simple baselines, evaluated chronologically on seasons the models never saw.
 
-> **Status: Phase 2.** The training pipeline (Phase 1) is working, and so are live predictions for upcoming fixtures, the saved prediction history and the live accuracy tracker (Phase 2). Next come the bookmaker-odds benchmark, the betting simulation and the final report (Phase 3), then the dashboard (Phase 4).
+> **Status: Phase 3.** Working so far: the training pipeline (Phase 1); live predictions, the prediction history and the live tracker (Phase 2); and the bookmaker-odds benchmark, betting simulation, EDA and final report (Phase 3). The Streamlit dashboard (Phase 4) is next.
+>
+> 📄 **[Read the final report](reports/final_report.md)**, a full walkthrough from data collection to simulated betting.
 
 ## Problem statement
 
@@ -41,21 +43,35 @@ saved models + that table        ─► src/models/predict.py        fixture fea
 src/live.py: predict | update | report | match
 ```
 
+Analysis and report (Phase 3):
+
+```
+Bet365 odds (football-data.co.uk) ─► src/data/odds.py              join to matches, dates cross-checked
+out-of-sample predictions         ─► src/models/benchmark.py       bookmaker implied probabilities scored like a model
+                                  ─► src/models/betting.py         $100 flat-stake simulation, ROI with bootstrap CI
+                                  ─► src/models/feature_selection.py  walk-forward permutation-importance selection
+                                  ─► src/analysis/eda.py           charts
+                                  ─► src/final_report.py           reports/final_report.md
+```
+
 ```
 ├── config.yaml                 seasons, sources, feature windows, split, tuning budget
 ├── data/raw/                   cached season CSVs (committed so runs are reproducible)
 ├── data/processed/             matches.csv, features.csv (generated)
 ├── data/predictions/           prediction_history.csv (the live forward test)
 ├── models/                     random_forest.pkl, xgboost.json, model_metadata.json
-├── reports/                    model_comparison.md, metrics.json, plots
+├── reports/                    final_report.md, model_comparison.md, metrics.json, figures/
 ├── src/
-│   ├── data/                   collect.py, clean.py, current_season.py, update.py
+│   ├── analysis/               eda.py
+│   ├── data/                   collect.py, clean.py, current_season.py, update.py, odds.py
 │   ├── features/               build_features.py
-│   ├── models/                 split.py, tuning.py, train_random_forest.py, train_xgboost.py, evaluate.py, predict.py
+│   ├── models/                 split.py, tuning.py, train_random_forest.py, train_xgboost.py, evaluate.py,
+│   │                           predict.py, benchmark.py, betting.py, feature_selection.py
 │   ├── tracking/               history.py, performance.py
-│   ├── utils/                  config.py, team_names.py
+│   ├── utils/                  config.py, team_names.py, plotting.py
 │   ├── pipeline.py             training
-│   └── live.py                 live predictions and tracking
+│   ├── live.py                 live predictions and tracking
+│   └── final_report.py         benchmark, betting simulation, EDA -> reports/final_report.md
 └── tests/                      leakage, feature, cleaning, split and team-name tests
 ```
 
@@ -153,6 +169,20 @@ What this means:
 ![Confusion matrices](reports/confusion_matrices_test.png)
 ![Calibration](reports/calibration_test.png)
 
+### Against the bookmaker, and simulated betting
+
+The strongest benchmark is the betting market itself. Bet365's odds, with the margin removed, score **48.9% accuracy and 1.019 log loss** on the 2025/26 test season, better than both models. The bookmaker has the lower log loss in all seven out-of-sample seasons. On the test season, the models close about three quarters of the log-loss gap between the naive baseline and the bookmaker, but not all of it.
+
+Staking $100 per bet at Bet365's pre-match prices on the test season:
+
+* backing Random Forest's pick in every match loses $4,993 (−13.1% ROI);
+* value betting (only when model probability × odds − 1 > 5%) loses $1,565 on 271 bets (−5.8% ROI, 95% CI −26.1% to +15.8%);
+* across the five walk-forward seasons, value betting returns −4.8% on 1,407 bets.
+
+So the models learn real signal from public statistics, but not enough to beat a market that already prices that information in. Details, charts and the edge-threshold sensitivity are in the [final report](reports/final_report.md).
+
+![Log loss by season](reports/figures/log_loss_by_season.png)
+
 ## How predictions work
 
 For an upcoming fixture, `src/models/predict.py`:
@@ -218,6 +248,9 @@ python -m src.pipeline --quick          # 3 tuning candidates per model, for a f
 python -m src.pipeline --force-download # re-download the season CSVs
 python -m pytest                        # run the tests
 
+python -m src.models.feature_selection  # walk-forward feature selection (after the pipeline)
+python -m src.final_report              # odds benchmark, betting simulation, EDA -> reports/final_report.md
+
 python -m src.live predict              # refresh data, record results, predict + save upcoming fixtures
 python -m src.live predict --dry-run    # show predictions without saving
 python -m src.live update               # record results of finished matches
@@ -234,13 +267,12 @@ To change seasons, windows, the split or the tuning budget, edit `config.yaml`. 
 * **Football is noisy.** Draws make up about a quarter of matches and are rarely the single most likely outcome. Both models almost never predict a draw as the top class even though their draw probabilities are sensible, so draw recall is near zero and macro F1 is held down. That's expected, not a bug. Probability-based metrics (log loss, Brier, calibration) are the fairer measure.
 * **One test season is a small sample** (380 matches). Accuracy differences of 1–2 points between the models are within noise; the report includes a bootstrap interval on the RF–XGBoost gap.
 * **No possession, xG, lineups, injuries or transfers.** Team strength changes within and between seasons in ways these features can't see.
-* **No betting-odds baseline yet.** Market odds are the strongest public benchmark. Phase 3 adds it, using football-data.co.uk odds republished by [premier-league-data](https://github.com/AnishKhetani/premier-league-data).
+* **The market is ahead.** Bookmaker odds beat both models on log loss in every out-of-sample season, and none of the betting strategies shows a reliable profit. The odds are football-data.co.uk's, republished by [premier-league-data](https://github.com/AnishKhetani/premier-league-data), and they are used only for benchmarking, never as model inputs.
 * **Live predictions for 2026/27 have no shot statistics** because the openfootball feed has goals only. Replaying the 2025/26 test season with shot data removed changed log loss from 1.036 to 1.040 (RF) and 1.038 to 1.042 (XGBoost), with no loss of accuracy, so the effect is small but real.
 * Early-season rows rely on thin season-to-date statistics.
 
 ## Future improvements
 
-* Phase 3: bookmaker-odds benchmark, betting simulation, EDA and a final report.
 * Phase 4: Streamlit dashboard.
 * Head-to-head features, rest days, streaks and previous-season finishing position, each kept only if it improves walk-forward log loss.
 * A bookmaker-odds baseline from the official Football-Data files.

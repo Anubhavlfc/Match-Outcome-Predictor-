@@ -45,6 +45,15 @@ output:
   models_dir: models
   reports_dir: reports
 
+# Bookmaker odds: a benchmark and a betting market only, never a model input.
+odds:
+  # football-data.co.uk odds, republished with the original columns renamed.
+  url: "https://raw.githubusercontent.com/AnishKhetani/premier-league-data/main/data/processed/results_with_odds.csv"
+  cache: data/raw/odds_E0.csv
+  bookmaker: bet365            # pre-match odds exist for every season
+  stake: 100                   # flat stake per bet in the betting simulation
+  value_edge: 0.05             # bet only when model probability x odds - 1 exceeds this
+
 # Live predictions for the season in progress.
 live:
   # Fixture list and kickoff times (also results, goals only). {label} is e.g. 2026-27.

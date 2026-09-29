@@ -106,7 +106,7 @@
       "macro_f1": 0.3961256094599391,
       "log_loss": 1.0064188294814211,
       "brier": 0.6023494246108899,
-      "ece": 0.0595403837464585,
+      "ece": 0.05954038374645853,
       "confusion_matrix": [
         [
           74,
@@ -308,7 +308,7 @@
       "macro_f1": 0.3461416824794434,
       "log_loss": 1.0360791499751105,
       "brier": 0.6233811527591122,
-      "ece": 0.03876562051644818,
+      "ece": 0.03876562051644823,
       "confusion_matrix": [
         [
           54,
@@ -428,7 +428,7 @@
     {
       "validation_season": 2019,
       "accuracy": 0.49736842105263157,
-      "log_loss": 1.0044294931378903,
+      "log_loss": 1.0044294931378905,
       "model": "Random Forest"
     },
     {
@@ -549,14 +549,104 @@
   "selected_model": "Random Forest",
   "rf_minus_xgb_log_loss": {
     "validation": {
-      "mean": -0.0024302683069128347,
-      "ci_low": -0.007485737837446361,
-      "ci_high": 0.0028777633202328005
+      "mean": -0.0024302683069128378,
+      "ci_low": -0.007485737837446373,
+      "ci_high": 0.002877763320232799
     },
     "test": {
-      "mean": -0.001626831207314104,
-      "ci_low": -0.007697743254448761,
-      "ci_high": 0.004193124620310599
+      "mean": -0.0016268312073141056,
+      "ci_low": -0.007697743254448762,
+      "ci_high": 0.004193124620310605
+    }
+  },
+  "permutation_importance_validation": {
+    "Random Forest": {
+      "season_goal_difference_diff": 0.00736,
+      "season_ppg_diff": 0.00659,
+      "league_position_diff": 0.004,
+      "venue_ppg_diff": 0.00328,
+      "home_home_goals_per_game": 0.00087,
+      "shots_on_target_diff": 0.0007,
+      "home_season_shots_on_target_per_game": 0.00069,
+      "away_away_goals_per_game": 0.0006,
+      "home_season_points_per_game": 0.00054,
+      "home_last5_avg_shots": 0.00054,
+      "away_season_shots_on_target_per_game": 0.00052,
+      "away_away_points_per_game": 0.00045,
+      "goal_difference_diff": 0.00044,
+      "away_away_goals_conceded_per_game": 0.00036,
+      "shots_diff": 0.00032,
+      "home_league_position": 0.00032,
+      "home_home_goals_conceded_per_game": 0.00027,
+      "away_away_win_rate": 0.00018,
+      "home_season_games_played": 0.00016,
+      "home_season_goals_per_game": 0.00014,
+      "away_season_goals_conceded_per_game": 0.00011,
+      "away_last5_goals_conceded": 0.00011,
+      "away_season_games_played": 7e-05,
+      "form_points_diff": 4e-05,
+      "home_last5_goals_scored": 3e-05,
+      "away_league_position": 3e-05,
+      "away_last5_points": 2e-05,
+      "away_last5_goals_scored": -1e-05,
+      "home_season_goal_difference_per_game": -3e-05,
+      "home_last5_goals_conceded": -3e-05,
+      "home_home_points_per_game": -6e-05,
+      "away_last5_avg_shots_on_target": -6e-05,
+      "home_last5_avg_shots_on_target": -6e-05,
+      "home_home_win_rate": -7e-05,
+      "away_season_goals_per_game": -8e-05,
+      "away_season_goal_difference_per_game": -8e-05,
+      "home_season_goals_conceded_per_game": -0.00012,
+      "away_season_points_per_game": -0.00015,
+      "home_last5_points": -0.00017,
+      "home_season_shots_per_game": -0.00026,
+      "away_season_shots_per_game": -0.00098,
+      "away_last5_avg_shots": -0.00099
+    },
+    "XGBoost": {
+      "season_goal_difference_diff": 0.01023,
+      "season_ppg_diff": 0.00623,
+      "league_position_diff": 0.00383,
+      "venue_ppg_diff": 0.00322,
+      "shots_on_target_diff": 0.0012,
+      "home_home_goals_per_game": 0.00112,
+      "away_season_shots_on_target_per_game": 0.00097,
+      "goal_difference_diff": 0.00082,
+      "home_season_shots_per_game": 0.00069,
+      "away_away_goals_conceded_per_game": 0.00068,
+      "shots_diff": 0.00059,
+      "home_last5_avg_shots": 0.00052,
+      "away_season_goal_difference_per_game": 0.00045,
+      "home_last5_avg_shots_on_target": 0.00043,
+      "away_season_goals_conceded_per_game": 0.00031,
+      "home_last5_points": 0.00026,
+      "home_home_goals_conceded_per_game": 0.00023,
+      "away_away_points_per_game": 0.00023,
+      "home_league_position": 0.00023,
+      "home_season_goals_per_game": 0.00014,
+      "home_season_points_per_game": 0.00011,
+      "away_season_games_played": 9e-05,
+      "away_last5_goals_conceded": 9e-05,
+      "away_last5_points": 8e-05,
+      "home_season_goal_difference_per_game": 7e-05,
+      "away_season_points_per_game": 6e-05,
+      "home_home_win_rate": 6e-05,
+      "home_home_points_per_game": 6e-05,
+      "home_season_games_played": 5e-05,
+      "away_away_goals_per_game": 4e-05,
+      "away_away_win_rate": 0.0,
+      "away_league_position": 0.0,
+      "away_last5_goals_scored": -3e-05,
+      "home_last5_goals_scored": -3e-05,
+      "home_last5_goals_conceded": -6e-05,
+      "form_points_diff": -9e-05,
+      "home_season_shots_on_target_per_game": -0.00013,
+      "away_last5_avg_shots_on_target": -0.00018,
+      "home_season_goals_conceded_per_game": -0.00026,
+      "away_season_goals_per_game": -0.00034,
+      "away_season_shots_per_game": -0.0005,
+      "away_last5_avg_shots": -0.00091
     }
   }
 }

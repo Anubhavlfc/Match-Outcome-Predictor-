@@ -22,6 +22,7 @@ from sklearn.metrics import (  # noqa: E402
 )
 
 from src.data.clean import TARGET_LABELS  # noqa: E402
+from src.utils.plotting import ENTITY_COLORS, NEUTRAL, apply_style  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -208,12 +209,14 @@ def permutation_importance_logloss(model: Any, X: pd.DataFrame, y: pd.Series, ra
 # --------------------------------------------------------------------------
 
 def plot_confusion_matrices(results: dict[str, dict[str, Any]], path: Path, title: str) -> None:
+    apply_style()
     names = list(results)
     fig, axes = plt.subplots(1, len(names), figsize=(4.2 * len(names), 4))
     axes = np.atleast_1d(axes)
     for ax, name in zip(axes, names):
         cm = np.array(results[name]["confusion_matrix"])
         ax.imshow(cm, cmap="Blues")
+        ax.grid(False)
         for i in range(3):
             for j in range(3):
                 ax.text(j, i, cm[i, j], ha="center", va="center",
@@ -232,16 +235,17 @@ def plot_confusion_matrices(results: dict[str, dict[str, Any]], path: Path, titl
 def plot_calibration(y_true: np.ndarray, probas: dict[str, np.ndarray], path: Path, title: str,
                      n_bins: int = 8) -> None:
     """Reliability curves: predicted probability vs observed frequency, per class."""
+    apply_style()
     y_true = np.asarray(y_true)
     fig, axes = plt.subplots(1, 3, figsize=(13, 4), sharey=True)
     for ax, cls in zip(axes, CLASSES):
-        ax.plot([0, 1], [0, 1], "--", color="grey", linewidth=1)
+        ax.plot([0, 1], [0, 1], color=NEUTRAL, linewidth=1)
         for name, proba in probas.items():
             p = proba[:, cls]
             hit = (y_true == cls).astype(float)
             bins = pd.qcut(p, q=n_bins, duplicates="drop")
             grouped = pd.DataFrame({"p": p, "hit": hit}).groupby(bins, observed=True).mean()
-            ax.plot(grouped["p"], grouped["hit"], marker="o", label=name)
+            ax.plot(grouped["p"], grouped["hit"], marker="o", label=name, color=ENTITY_COLORS.get(name))
         ax.set_title(TARGET_LABELS[cls])
         ax.set_xlabel("Predicted probability")
         ax.set_xlim(0, 1)
@@ -255,11 +259,13 @@ def plot_calibration(y_true: np.ndarray, probas: dict[str, np.ndarray], path: Pa
 
 
 def plot_importance(importances: dict[str, pd.DataFrame], path: Path, top_n: int = 15) -> None:
+    apply_style()
     fig, axes = plt.subplots(1, len(importances), figsize=(7 * len(importances), 6))
     axes = np.atleast_1d(axes)
     for ax, (name, table) in zip(axes, importances.items()):
         top = table.head(top_n).iloc[::-1]
-        ax.barh(top.index, top["importance"], xerr=top["std"], color="#2b8a3e")
+        ax.barh(top.index, top["importance"], xerr=top["std"], color=ENTITY_COLORS.get(name, NEUTRAL),
+                error_kw={"ecolor": NEUTRAL, "elinewidth": 1})
         ax.set_title(f"{name}: permutation importance (validation log loss)")
         ax.set_xlabel("Increase in log loss when shuffled")
     fig.tight_layout()

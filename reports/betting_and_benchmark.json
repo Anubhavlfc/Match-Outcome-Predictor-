@@ -1,0 +1,435 @@
+{
+  "log_loss_by_season": [
+    {
+      "season": 2019,
+      "Random Forest": 1.0044294931378908,
+      "XGBoost": 1.0067124103328784,
+      "Bookmaker": 0.9732089102123394,
+      "Class frequencies": 1.0645060590262054
+    },
+    {
+      "season": 2020,
+      "Random Forest": 1.0385538953325384,
+      "XGBoost": 1.0382469335668782,
+      "Bookmaker": 1.0070132279723896,
+      "Class frequencies": 1.0889988081328643
+    },
+    {
+      "season": 2021,
+      "Random Forest": 0.9891725564979484,
+      "XGBoost": 0.9930604763259449,
+      "Bookmaker": 0.9372433613219306,
+      "Class frequencies": 1.0694653664347
+    },
+    {
+      "season": 2022,
+      "Random Forest": 0.981114407372646,
+      "XGBoost": 0.9816573211902796,
+      "Bookmaker": 0.9661582704386319,
+      "Class frequencies": 1.0509836905117582
+    },
+    {
+      "season": 2023,
+      "Random Forest": 0.9488750738523334,
+      "XGBoost": 0.9495828787090046,
+      "Bookmaker": 0.9092124760895899,
+      "Class frequencies": 1.05404355376108
+    },
+    {
+      "season": 2024,
+      "Random Forest": 1.0064188294814211,
+      "XGBoost": 1.008849094360685,
+      "Bookmaker": 0.9707576734366715,
+      "Class frequencies": 1.0810879896180008
+    },
+    {
+      "season": 2025,
+      "Random Forest": 1.0360791499751105,
+      "XGBoost": 1.0377059807091018,
+      "Bookmaker": 1.018547433594444,
+      "Class frequencies": 1.0837830487333295
+    }
+  ],
+  "benchmark_validation": [
+    {
+      "Predictor": "Class frequencies",
+      "Accuracy": 0.40789473684210525,
+      "Macro F1": 0.19314641744548286,
+      "Log Loss": 1.0810879896180008,
+      "Brier": 0.6557306521664786
+    },
+    {
+      "Predictor": "Random Forest",
+      "Accuracy": 0.5289473684210526,
+      "Macro F1": 0.3961256094599391,
+      "Log Loss": 1.0064188294814211,
+      "Brier": 0.60234942461089
+    },
+    {
+      "Predictor": "XGBoost",
+      "Accuracy": 0.5368421052631579,
+      "Macro F1": 0.4014357053682896,
+      "Log Loss": 1.008849094360685,
+      "Brier": 0.6034207076504116
+    },
+    {
+      "Predictor": "Bookmaker (pre-match)",
+      "Accuracy": 0.5421052631578948,
+      "Macro F1": 0.40721022586249694,
+      "Log Loss": 0.9707576734366715,
+      "Brier": 0.5786638026588309
+    },
+    {
+      "Predictor": "Bookmaker (closing)",
+      "Accuracy": 0.5526315789473685,
+      "Macro F1": 0.4152173506939904,
+      "Log Loss": 0.9677686847968537,
+      "Brier": 0.5757747889709252
+    }
+  ],
+  "benchmark_test": [
+    {
+      "Predictor": "Class frequencies",
+      "Accuracy": 0.4263157894736842,
+      "Macro F1": 0.1992619926199262,
+      "Log Loss": 1.0837830487333295,
+      "Brier": 0.6558203601108034
+    },
+    {
+      "Predictor": "Random Forest",
+      "Accuracy": 0.46578947368421053,
+      "Macro F1": 0.3461416824794434,
+      "Log Loss": 1.0360791499751105,
+      "Brier": 0.6233811527591122
+    },
+    {
+      "Predictor": "XGBoost",
+      "Accuracy": 0.47368421052631576,
+      "Macro F1": 0.3513183375539997,
+      "Log Loss": 1.0377059807091018,
+      "Brier": 0.6239880940872179
+    },
+    {
+      "Predictor": "Bookmaker (pre-match)",
+      "Accuracy": 0.48947368421052634,
+      "Macro F1": 0.3665394913641758,
+      "Log Loss": 1.018547433594444,
+      "Brier": 0.6115122077213379
+    },
+    {
+      "Predictor": "Bookmaker (closing)",
+      "Accuracy": 0.4921052631578947,
+      "Macro F1": 0.36885416666666665,
+      "Log Loss": 1.013128138181448,
+      "Brier": 0.608242745873826
+    }
+  ],
+  "betting": {
+    "walk-forward": [
+      {
+        "Strategy": "Random Forest model pick",
+        "Bets": 1900,
+        "Staked": 190000.0,
+        "Profit": -11632.0,
+        "ROI": -0.06122105263157895,
+        "ROI 95% CI": "-10.5% to -1.8%",
+        "Hit rate": 0.5236842105263158,
+        "Avg odds": 2.0284263157894737
+      },
+      {
+        "Strategy": "Random Forest value bets",
+        "Bets": 1407,
+        "Staked": 140700.0,
+        "Profit": -6736.0,
+        "ROI": -0.047874911158493245,
+        "ROI 95% CI": "-15.9% to 6.6%",
+        "Hit rate": 0.24093816631130063,
+        "Avg odds": 5.541293532338309
+      },
+      {
+        "Strategy": "XGBoost model pick",
+        "Bets": 1900,
+        "Staked": 190000.0,
+        "Profit": -10841.0,
+        "ROI": -0.057057894736842106,
+        "ROI 95% CI": "-10.0% to -1.2%",
+        "Hit rate": 0.5263157894736842,
+        "Avg odds": 2.015757894736842
+      },
+      {
+        "Strategy": "XGBoost value bets",
+        "Bets": 1478,
+        "Staked": 147800.0,
+        "Profit": -8311.0,
+        "ROI": -0.056231393775372125,
+        "ROI 95% CI": "-16.8% to 5.5%",
+        "Hit rate": 0.2307171853856563,
+        "Avg odds": 5.678734776725305
+      },
+      {
+        "Strategy": "Bookmaker favourite",
+        "Bets": 1900,
+        "Staked": 190000.0,
+        "Profit": -5587.0,
+        "ROI": -0.029405263157894736,
+        "ROI 95% CI": "-7.1% to 1.2%",
+        "Hit rate": 0.5552631578947368,
+        "Avg odds": 1.8487263157894736
+      },
+      {
+        "Strategy": "Always home",
+        "Bets": 1900,
+        "Staked": 190000.0,
+        "Profit": -7857.0,
+        "ROI": -0.04135263157894737,
+        "ROI 95% CI": "-10.1% to 2.0%",
+        "Hit rate": 0.44105263157894736,
+        "Avg odds": 2.955215789473684
+      }
+    ],
+    "validation": [
+      {
+        "Strategy": "Random Forest model pick",
+        "Bets": 380,
+        "Staked": 38000.0,
+        "Profit": -1976.0000000000002,
+        "ROI": -0.052000000000000005,
+        "ROI 95% CI": "-15.0% to 4.3%",
+        "Hit rate": 0.5289473684210526,
+        "Avg odds": 1.9188947368421052
+      },
+      {
+        "Strategy": "Random Forest value bets",
+        "Bets": 272,
+        "Staked": 27200.0,
+        "Profit": -6383.0,
+        "ROI": -0.23466911764705883,
+        "ROI 95% CI": "-43.7% to -1.9%",
+        "Hit rate": 0.20955882352941177,
+        "Avg odds": 5.303897058823529
+      },
+      {
+        "Strategy": "XGBoost model pick",
+        "Bets": 380,
+        "Staked": 38000.0,
+        "Profit": -1155.0000000000002,
+        "ROI": -0.03039473684210527,
+        "ROI 95% CI": "-12.8% to 6.7%",
+        "Hit rate": 0.5368421052631579,
+        "Avg odds": 1.9196315789473686
+      },
+      {
+        "Strategy": "XGBoost value bets",
+        "Bets": 289,
+        "Staked": 28900.0,
+        "Profit": -4545.0,
+        "ROI": -0.15726643598615916,
+        "ROI 95% CI": "-35.7% to 6.1%",
+        "Hit rate": 0.22837370242214533,
+        "Avg odds": 5.246920415224913
+      },
+      {
+        "Strategy": "Bookmaker favourite",
+        "Bets": 380,
+        "Staked": 38000.0,
+        "Profit": -1774.0,
+        "ROI": -0.046684210526315786,
+        "ROI 95% CI": "-13.9% to 4.7%",
+        "Hit rate": 0.5421052631578948,
+        "Avg odds": 1.840157894736842
+      },
+      {
+        "Strategy": "Always home",
+        "Bets": 380,
+        "Staked": 38000.0,
+        "Profit": -6996.0,
+        "ROI": -0.18410526315789474,
+        "ROI 95% CI": "-29.9% to -6.7%",
+        "Hit rate": 0.40789473684210525,
+        "Avg odds": 2.7453684210526315
+      }
+    ],
+    "test": [
+      {
+        "Strategy": "Random Forest model pick",
+        "Bets": 380,
+        "Staked": 38000.0,
+        "Profit": -4993.0,
+        "ROI": -0.13139473684210526,
+        "ROI 95% CI": "-23.2% to -3.0%",
+        "Hit rate": 0.46578947368421053,
+        "Avg odds": 2.0205526315789477
+      },
+      {
+        "Strategy": "Random Forest value bets",
+        "Bets": 271,
+        "Staked": 27100.0,
+        "Profit": -1565.0,
+        "ROI": -0.05774907749077491,
+        "ROI 95% CI": "-26.1% to 15.8%",
+        "Hit rate": 0.25830258302583026,
+        "Avg odds": 4.767712177121771
+      },
+      {
+        "Strategy": "XGBoost model pick",
+        "Bets": 380,
+        "Staked": 38000.0,
+        "Profit": -4513.0,
+        "ROI": -0.11876315789473685,
+        "ROI 95% CI": "-21.9% to -1.8%",
+        "Hit rate": 0.47368421052631576,
+        "Avg odds": 2.0092105263157896
+      },
+      {
+        "Strategy": "XGBoost value bets",
+        "Bets": 290,
+        "Staked": 29000.0,
+        "Profit": -1287.0,
+        "ROI": -0.04437931034482759,
+        "ROI 95% CI": "-24.6% to 16.4%",
+        "Hit rate": 0.25517241379310346,
+        "Avg odds": 4.782241379310345
+      },
+      {
+        "Strategy": "Bookmaker favourite",
+        "Bets": 380,
+        "Staked": 38000.0,
+        "Profit": -4173.0,
+        "ROI": -0.10981578947368421,
+        "ROI 95% CI": "-20.4% to -1.2%",
+        "Hit rate": 0.48947368421052634,
+        "Avg odds": 1.9012105263157895
+      },
+      {
+        "Strategy": "Always home",
+        "Bets": 380,
+        "Staked": 38000.0,
+        "Profit": -3513.0,
+        "ROI": -0.09244736842105263,
+        "ROI 95% CI": "-21.2% to 2.8%",
+        "Hit rate": 0.4263157894736842,
+        "Avg odds": 2.647789473684211
+      }
+    ]
+  },
+  "edge_sensitivity": {
+    "validation": [
+      {
+        "Model": "Random Forest",
+        "Edge threshold": "0%",
+        "Bets": 336,
+        "Profit": -5151.0,
+        "ROI": -0.15330357142857143
+      },
+      {
+        "Model": "Random Forest",
+        "Edge threshold": "5%",
+        "Bets": 272,
+        "Profit": -6383.0,
+        "ROI": -0.23466911764705883
+      },
+      {
+        "Model": "Random Forest",
+        "Edge threshold": "10%",
+        "Bets": 222,
+        "Profit": -7265.0,
+        "ROI": -0.32725225225225224
+      },
+      {
+        "Model": "Random Forest",
+        "Edge threshold": "20%",
+        "Bets": 150,
+        "Profit": -7351.0,
+        "ROI": -0.49006666666666665
+      },
+      {
+        "Model": "XGBoost",
+        "Edge threshold": "0%",
+        "Bets": 341,
+        "Profit": -3353.0,
+        "ROI": -0.09832844574780059
+      },
+      {
+        "Model": "XGBoost",
+        "Edge threshold": "5%",
+        "Bets": 289,
+        "Profit": -4545.0,
+        "ROI": -0.15726643598615916
+      },
+      {
+        "Model": "XGBoost",
+        "Edge threshold": "10%",
+        "Bets": 236,
+        "Profit": -6415.0,
+        "ROI": -0.27182203389830506
+      },
+      {
+        "Model": "XGBoost",
+        "Edge threshold": "20%",
+        "Bets": 166,
+        "Profit": -5346.0,
+        "ROI": -0.3220481927710843
+      }
+    ],
+    "test": [
+      {
+        "Model": "Random Forest",
+        "Edge threshold": "0%",
+        "Bets": 334,
+        "Profit": -867.0,
+        "ROI": -0.02595808383233533
+      },
+      {
+        "Model": "Random Forest",
+        "Edge threshold": "5%",
+        "Bets": 271,
+        "Profit": -1565.0,
+        "ROI": -0.05774907749077491
+      },
+      {
+        "Model": "Random Forest",
+        "Edge threshold": "10%",
+        "Bets": 222,
+        "Profit": -1996.0,
+        "ROI": -0.08990990990990991
+      },
+      {
+        "Model": "Random Forest",
+        "Edge threshold": "20%",
+        "Bets": 137,
+        "Profit": -2905.0,
+        "ROI": -0.21204379562043796
+      },
+      {
+        "Model": "XGBoost",
+        "Edge threshold": "0%",
+        "Bets": 345,
+        "Profit": -1499.0,
+        "ROI": -0.04344927536231884
+      },
+      {
+        "Model": "XGBoost",
+        "Edge threshold": "5%",
+        "Bets": 290,
+        "Profit": -1287.0,
+        "ROI": -0.04437931034482759
+      },
+      {
+        "Model": "XGBoost",
+        "Edge threshold": "10%",
+        "Bets": 248,
+        "Profit": 50.0,
+        "ROI": 0.0020161290322580645
+      },
+      {
+        "Model": "XGBoost",
+        "Edge threshold": "20%",
+        "Bets": 168,
+        "Profit": 39.0,
+        "ROI": 0.0023214285714285715
+      }
+    ]
+  },
+  "stake": 100,
+  "value_edge": 0.05
+}
