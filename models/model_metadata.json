@@ -1,5 +1,5 @@
 {
-  "trained_at": "2026-09-29T21:36:33+00:00",
+  "trained_at": "2026-09-29T21:51:44+00:00",
   "feature_columns": [
     "home_last5_points",
     "home_last5_goals_scored",
@@ -44,6 +44,11 @@
     "league_position_diff",
     "venue_ppg_diff"
   ],
+  "feature_settings": {
+    "form_window": 5,
+    "venue_window": 10,
+    "venue_min_periods": 3
+  },
   "target_encoding": {
     "0": "Away Win",
     "1": "Draw",
@@ -59,8 +64,10 @@
     "2021/22",
     "2022/23",
     "2023/24",
-    "2024/25"
+    "2024/25",
+    "2025/26"
   ],
+  "evaluated_on_season": "2025/26",
   "hyperparameters": {
     "Random Forest": {
       "n_estimators": 500,

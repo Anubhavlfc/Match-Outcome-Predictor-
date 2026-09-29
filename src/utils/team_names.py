@@ -23,6 +23,7 @@ _CANONICAL_ALIASES: dict[str, list[str]] = {
     "Burnley": ["Burnley FC"],
     "Cardiff City": ["Cardiff"],
     "Chelsea": ["Chelsea FC"],
+    "Coventry City": ["Coventry"],
     "Crystal Palace": ["Palace"],
     "Everton": ["Everton FC"],
     "Fulham": ["Fulham FC"],
@@ -62,15 +63,26 @@ class UnknownTeamError(ValueError):
     """Raised when a team name has no canonical mapping."""
 
 
+# Club-type affixes some sources add ("Arsenal FC", "AFC Bournemouth", "Hull City AFC").
+_SUFFIXES = (" fc", " afc")
+_PREFIXES = ("afc ",)
+
+
 def normalize_team_name(name: str) -> str:
     """Return the canonical spelling of a team name."""
-    key = str(name).strip().casefold()
-    try:
+    key = " ".join(str(name).split()).casefold()
+    if key in _LOOKUP:
         return _LOOKUP[key]
-    except KeyError:
-        raise UnknownTeamError(
-            f"Unknown team name {name!r}. Add it to _CANONICAL_ALIASES in src/utils/team_names.py."
-        ) from None
+    stripped = key
+    for suffix in _SUFFIXES:
+        stripped = stripped.removesuffix(suffix)
+    for prefix in _PREFIXES:
+        stripped = stripped.removeprefix(prefix)
+    if stripped in _LOOKUP:
+        return _LOOKUP[stripped]
+    raise UnknownTeamError(
+        f"Unknown team name {name!r}. Add it to _CANONICAL_ALIASES in src/utils/team_names.py."
+    )
 
 
 def normalize_team_names(names: Iterable[str]) -> list[str]:

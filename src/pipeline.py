@@ -1,4 +1,4 @@
-"""Phase 1 end-to-end pipeline.
+"""Training pipeline: data -> features -> tuning -> evaluation -> saved models.
 
     python -m src.pipeline            # full run
     python -m src.pipeline --quick    # fewer tuning candidates, for a smoke test
@@ -13,7 +13,9 @@ Steps
 6. Fit on the training seasons and evaluate on the validation season
    (this is where models and feature sets are compared).
 7. Refit on train + validation and evaluate once on the untouched test season.
-8. Save both final models and write reports/model_comparison.md.
+8. Refit on every completed season (train + validation + test) for live
+   use, save both models, and write reports/model_comparison.md. The
+   reported test numbers come from step 7, before the test season was seen.
 """
 
 from __future__ import annotations
@@ -161,14 +163,29 @@ def run(config_path: str | None = None, quick: bool = False, force_download: boo
                                                   test_probas["XGBoost"], seed),
     }
 
-    # 8. Save models, metrics, figures, report --------------------------------
-    save_random_forest(final_models["Random Forest"], models_dir / "random_forest.pkl")
-    save_xgboost(final_models["XGBoost"], models_dir / "xgboost.json")
+    # 8. Production models: same hyperparameters, every completed season ----
+    # Evaluation is finished, so the test season can now be used as training
+    # data. Live predictions for the next season should learn from the most
+    # recent season too.
+    all_seasons = [*split_cfg["train_seasons"], split_cfg["validation_season"], split_cfg["test_season"]]
+    production_rows = features[features["season"].isin(all_seasons)]
+    production_models = {
+        name: _fit(name, production_rows[columns], production_rows["target"], best_params[name], seed)
+        for name in MODEL_NAMES
+    }
+    save_random_forest(production_models["Random Forest"], models_dir / "random_forest.pkl")
+    save_xgboost(production_models["XGBoost"], models_dir / "xgboost.json")
     metadata = {
         "trained_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "feature_columns": columns,
+        "feature_settings": {
+            "form_window": feat_cfg["form_window"],
+            "venue_window": feat_cfg["venue_window"],
+            "venue_min_periods": feat_cfg["venue_min_periods"],
+        },
         "target_encoding": {str(k): v for k, v in TARGET_LABELS.items()},
-        "trained_on_seasons": [season_label(s) for s in [*split_cfg["train_seasons"], split_cfg["validation_season"]]],
+        "trained_on_seasons": [season_label(s) for s in all_seasons],
+        "evaluated_on_season": season_label(split_cfg["test_season"]),
         "hyperparameters": best_params,
         "random_state": seed,
         "versions": {"python": platform.python_version(), "scikit-learn": sklearn.__version__,

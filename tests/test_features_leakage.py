@@ -167,3 +167,14 @@ def test_prediction_features_match_training_features(real_matches):
         expected = full.loc[full["match_id"] == match.match_id, ALL_FEATURES].iloc[0].to_numpy(dtype=float)
         actual = rebuilt[ALL_FEATURES].iloc[0].to_numpy(dtype=float)
         assert np.allclose(expected, actual, equal_nan=True), (match.date, match.home_team, match.away_team)
+
+
+def test_missing_shot_data_gives_nan_not_zero(synthetic_matches):
+    """A season with no shot data (e.g. a goals-only results feed) must not read as 0 shots per game."""
+    matches = synthetic_matches.copy()
+    second = matches["season"] == 2021
+    matches.loc[second, ["home_shots", "away_shots", "home_shots_on_target", "away_shots_on_target"]] = np.nan
+    table = build_features(matches)
+    later = table[(table["season"] == 2021) & (table["home_season_games_played"] > 0)]
+    assert later["home_season_shots_per_game"].isna().all()
+    assert later["home_season_points_per_game"].notna().all()

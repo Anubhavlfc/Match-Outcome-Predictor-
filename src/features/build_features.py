@@ -194,10 +194,16 @@ def add_form_features(rows: pd.DataFrame, window: int) -> pd.DataFrame:
 def add_season_features(rows: pd.DataFrame) -> pd.DataFrame:
     """Season-to-date averages using only earlier matches in the same season."""
     keys = ["team", "season"]
-    games = _lagged_cumsum(rows, keys, "played")
-    per_game = lambda column: _lagged_cumsum(rows, keys, column) / games.replace(0, np.nan)  # noqa: E731
 
-    rows["season_games_played"] = games
+    def per_game(column: str) -> pd.Series:
+        # Divide by the number of earlier matches where this statistic was
+        # actually recorded, so a source without shot data gives NaN rather
+        # than a misleading 0 shots per game.
+        total = _lagged_cumsum(rows, keys, column)
+        recorded = _lagged_cumsum(rows.assign(_recorded=rows[column].notna().astype(float)), keys, "_recorded")
+        return total / recorded.replace(0, np.nan)
+
+    rows["season_games_played"] = _lagged_cumsum(rows, keys, "played")
     rows["season_points_per_game"] = per_game("points")
     rows["season_goals_per_game"] = per_game("goals_for")
     rows["season_goals_conceded_per_game"] = per_game("goals_against")

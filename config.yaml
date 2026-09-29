@@ -44,3 +44,12 @@ tuning:
 output:
   models_dir: models
   reports_dir: reports
+
+# Live predictions for the season in progress.
+live:
+  # Fixture list and kickoff times (also results, goals only). {label} is e.g. 2026-27.
+  schedule_url_template: "https://raw.githubusercontent.com/openfootball/football.json/master/{label}/en.1.json"
+  timezone: Europe/London        # kickoff times in the schedule are UK local time
+  horizon_days: 14               # predict fixtures kicking off within this many days
+  stale_result_hours: 48         # a past fixture without a result after this long means the feed is behind
+  history_path: data/predictions/prediction_history.csv
