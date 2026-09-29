@@ -91,12 +91,21 @@ def load_raw_season(path: Path, start_year: int) -> pd.DataFrame:
     return df
 
 
-def clean_matches(raw: pd.DataFrame) -> pd.DataFrame:
-    """Normalize names, types and the target, and validate consistency."""
+def clean_matches(raw: pd.DataFrame, team_prefix: str | None = None) -> pd.DataFrame:
+    """Normalize names, types and the target, and validate consistency.
+
+    ``team_prefix`` is for other leagues (used only in experiments): names
+    are kept as the source spells them, prefixed with the league, instead of
+    being mapped to canonical Premier League names.
+    """
     df = raw.copy()
     df["date"] = parse_dates(df["date"])
-    df["home_team"] = df["home_team"].map(normalize_team_name)
-    df["away_team"] = df["away_team"].map(normalize_team_name)
+    if team_prefix is None:
+        df["home_team"] = df["home_team"].map(normalize_team_name)
+        df["away_team"] = df["away_team"].map(normalize_team_name)
+    else:
+        for side in ("home_team", "away_team"):
+            df[side] = team_prefix + ":" + df[side].astype(str).str.strip()
     for col in STAT_COLUMNS:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
@@ -141,9 +150,10 @@ def report_quality(df: pd.DataFrame) -> None:
                    season, len(group), n_teams, n_missing)
 
 
-def build_match_table(raw_paths: dict[int, Path]) -> pd.DataFrame:
+def build_match_table(raw_paths: dict[int, Path], team_prefix: str | None = None) -> pd.DataFrame:
     """Load, combine and clean every season file. ``raw_paths`` maps start year -> path."""
     frames = [load_raw_season(path, year) for year, path in sorted(raw_paths.items())]
-    matches = clean_matches(pd.concat(frames, ignore_index=True))
-    report_quality(matches)
+    matches = clean_matches(pd.concat(frames, ignore_index=True), team_prefix)
+    if team_prefix is None:
+        report_quality(matches)
     return matches

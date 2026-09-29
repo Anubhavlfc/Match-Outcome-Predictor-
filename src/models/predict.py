@@ -5,7 +5,9 @@ For each fixture:
 2. build both teams' features with the same code used in training
    (``features_for_fixtures``);
 3. check the columns are exactly the saved models' feature schema;
-4. run Random Forest and XGBoost and return each model's probabilities.
+4. run Random Forest and XGBoost and return each model's probabilities,
+   plus a predicted outcome from the draw rule saved with the models
+   (``src/models/decision.py``); older model files without one use argmax.
 """
 
 from __future__ import annotations
@@ -23,6 +25,7 @@ from xgboost import XGBClassifier
 
 from src.data.clean import AWAY_WIN, DRAW, HOME_WIN, TARGET_LABELS
 from src.features.build_features import features_for_fixtures
+from src.models.decision import predict_outcome
 from src.models.train_random_forest import load_random_forest
 from src.models.train_xgboost import load_xgboost
 
@@ -45,6 +48,9 @@ class TrainedModels:
     @property
     def feature_settings(self) -> dict[str, int]:
         return self.metadata["feature_settings"]
+
+    def draw_threshold(self, prefix: str) -> float | None:
+        return self.metadata.get("draw_threshold", {}).get(MODEL_PREFIXES[prefix])
 
     def by_prefix(self) -> dict[str, Any]:
         return {"rf": self.random_forest, "xgb": self.xgboost}
@@ -99,7 +105,8 @@ def predict_features(models: TrainedModels, features: pd.DataFrame) -> pd.DataFr
         out[f"{prefix}_home_probability"] = proba[:, HOME_WIN]
         out[f"{prefix}_draw_probability"] = proba[:, DRAW]
         out[f"{prefix}_away_probability"] = proba[:, AWAY_WIN]
-        out[f"{prefix}_prediction"] = [TARGET_LABELS[i] for i in proba.argmax(axis=1)]
+        predicted = predict_outcome(proba, models.draw_threshold(prefix))
+        out[f"{prefix}_prediction"] = [TARGET_LABELS[i] for i in predicted]
     out["models_agree"] = out["rf_prediction"] == out["xgb_prediction"]
     return out
 

@@ -7,8 +7,10 @@ made money?
 Source: football-data.co.uk's odds columns, republished by the
 ``premier-league-data`` project (the official site is unreachable from the
 build environment). ``B365H/D/A`` are Bet365 prices collected before the
-weekend's matches (every season); ``B365CH/CD/CA`` are closing prices
-(from 2019/20).
+weekend's matches (from 2002/03); ``B365CH/CD/CA`` are closing prices
+(from 2019/20). The best price and the average price across all listed
+bookmakers come from Betbrain (2005/06 to 2018/19) and football-data's own
+market columns (from 2019/20).
 """
 
 from __future__ import annotations
@@ -29,10 +31,20 @@ ODDS_COLUMNS = {
     "pre_match": ("{b}_1x2_home", "{b}_1x2_draw", "{b}_1x2_away"),
     "closing": ("{b}_1x2_home_close", "{b}_1x2_draw_close", "{b}_1x2_away_close"),
 }
+# Best and average price across bookmakers: Betbrain's columns until
+# 2018/19, football-data's market columns afterwards.
+MARKET_COLUMNS = {
+    "max_odds": (("betbrain_max_1x2_home", "betbrain_max_1x2_draw", "betbrain_max_1x2_away"),
+                 ("market_max_1x2_home", "market_max_1x2_draw", "market_max_1x2_away")),
+    "avg_odds": (("betbrain_avg_1x2_home", "betbrain_avg_1x2_draw", "betbrain_avg_1x2_away"),
+                 ("market_avg_1x2_home", "market_avg_1x2_draw", "market_avg_1x2_away")),
+}
 OUTPUT_COLUMNS = [
     "season", "date", "home_team", "away_team",
     "odds_home", "odds_draw", "odds_away",
     "close_odds_home", "close_odds_draw", "close_odds_away",
+    "max_odds_home", "max_odds_draw", "max_odds_away",
+    "avg_odds_home", "avg_odds_draw", "avg_odds_away",
 ]
 
 
@@ -45,7 +57,10 @@ def download_odds(url: str, cache: Path, bookmaker: str, first_season: int, forc
                   timeout: int = 120) -> pd.DataFrame:
     """Download the odds file once and keep a small E0 extract in ``cache``."""
     if cache.exists() and not force:
-        return pd.read_csv(cache, parse_dates=["date"])
+        cached = pd.read_csv(cache, parse_dates=["date"])
+        if set(OUTPUT_COLUMNS) <= set(cached.columns) and cached["season"].min() <= first_season:
+            return cached
+        logger.info("Odds cache is from an older version or starts too late; downloading again")
     logger.info("Downloading odds from %s", url)
     response = requests.get(url, timeout=timeout)
     response.raise_for_status()
@@ -66,8 +81,14 @@ def download_odds(url: str, cache: Path, bookmaker: str, first_season: int, forc
     })
     for name, column in zip(OUTPUT_COLUMNS[4:7], pre):
         odds[name] = pd.to_numeric(raw[column], errors="coerce")
-    for name, column in zip(OUTPUT_COLUMNS[7:], close):
+    for name, column in zip(OUTPUT_COLUMNS[7:10], close):
         odds[name] = pd.to_numeric(raw[column], errors="coerce")
+    for kind, (older, newer) in MARKET_COLUMNS.items():
+        for outcome, old_col, new_col in zip(("home", "draw", "away"), older, newer):
+            values = pd.to_numeric(raw[old_col], errors="coerce") if old_col in raw else np.nan
+            if new_col in raw:
+                values = pd.to_numeric(raw[new_col], errors="coerce").fillna(values)
+            odds[f"{kind}_{outcome}"] = values
     cache.parent.mkdir(parents=True, exist_ok=True)
     odds.to_csv(cache, index=False)
     return odds
@@ -104,7 +125,11 @@ def implied_probabilities(odds: np.ndarray) -> np.ndarray:
     return inverse / inverse.sum(axis=1, keepdims=True)
 
 
-def odds_matrix(frame: pd.DataFrame, closing: bool = False) -> np.ndarray:
-    """Decimal odds as an (n, 3) array in class order (away, draw, home)."""
-    prefix = "close_odds" if closing else "odds"
+def odds_matrix(frame: pd.DataFrame, closing: bool = False, kind: str | None = None) -> np.ndarray:
+    """Decimal odds as an (n, 3) array in class order (away, draw, home).
+
+    ``kind`` is one of "odds" (Bet365 pre-match, the default), "close_odds",
+    "max_odds" (best price across bookmakers) or "avg_odds".
+    """
+    prefix = kind or ("close_odds" if closing else "odds")
     return frame[[f"{prefix}_away", f"{prefix}_draw", f"{prefix}_home"]].to_numpy(dtype=float)

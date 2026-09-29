@@ -16,3 +16,6 @@ data/processed/*
 .DS_Store
 .idea/
 .vscode/
+
+# Other leagues are downloaded on demand by python -m src.experiments
+data/raw/other_leagues/

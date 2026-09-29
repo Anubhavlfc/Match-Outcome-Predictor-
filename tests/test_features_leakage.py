@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 from src.features.build_features import (
+    FEATURE_GROUPS,
     POST_MATCH_COLUMNS,
     build_features,
     feature_columns,
@@ -16,7 +17,8 @@ from src.features.build_features import (
 
 from tests.conftest import make_matches
 
-ALL_FEATURES = feature_columns(include_diffs=True)
+# Every feature any configuration can use, optional groups included.
+ALL_FEATURES = feature_columns(include_diffs=True, groups=list(FEATURE_GROUPS))
 
 
 def _row(table, match_id):
@@ -25,7 +27,7 @@ def _row(table, match_id):
 
 def test_no_target_or_post_match_columns_in_features():
     for include_diffs in (True, False):
-        columns = feature_columns(include_diffs)
+        columns = feature_columns(include_diffs, groups=list(FEATURE_GROUPS))
         assert not set(columns) & set(POST_MATCH_COLUMNS)
         assert not {"match_id", "season", "date", "home_team", "away_team"} & set(columns)
         assert len(columns) == len(set(columns))
@@ -178,3 +180,45 @@ def test_missing_shot_data_gives_nan_not_zero(synthetic_matches):
     later = table[(table["season"] == 2021) & (table["home_season_games_played"] > 0)]
     assert later["home_season_shots_per_game"].isna().all()
     assert later["home_season_points_per_game"].notna().all()
+
+
+def test_unbeaten_and_winless_runs_count_only_earlier_matches(synthetic_matches):
+    table = build_features(synthetic_matches)
+    team = "Arsenal"
+    games = synthetic_matches[(synthetic_matches.home_team == team) | (synthetic_matches.away_team == team)]
+    games = games.sort_values("date").reset_index(drop=True)
+    unbeaten = winless = 0
+    for match in games.itertuples():
+        row = table[table.match_id == match.match_id].iloc[0]
+        side = "home" if match.home_team == team else "away"
+        assert row[f"{side}_unbeaten_run"] == unbeaten
+        assert row[f"{side}_winless_run"] == winless
+        scored = match.home_goals if side == "home" else match.away_goals
+        conceded = match.away_goals if side == "home" else match.home_goals
+        unbeaten = 0 if scored < conceded else unbeaten + 1
+        winless = 0 if scored > conceded else winless + 1
+
+
+def test_previous_season_position_comes_from_last_seasons_final_table():
+    matches = make_matches(n_seasons=2)
+    table = build_features(matches)
+    first = matches[matches.season == 2020]
+    points = {}
+    for m in first.itertuples():
+        points[m.home_team] = points.get(m.home_team, 0) + (3 if m.home_goals > m.away_goals else m.home_goals == m.away_goals)
+        points[m.away_team] = points.get(m.away_team, 0) + (3 if m.away_goals > m.home_goals else m.home_goals == m.away_goals)
+    second = table[table.season == 2021]
+    for row in second.itertuples():
+        better = sum(p > points[row.home_team] for p in points.values())
+        assert row.home_prev_season_position >= 1 + better
+    assert table.loc[table.season == 2020, "home_prev_season_position"].isna().all()
+
+
+def test_head_to_head_ignores_the_current_meeting(synthetic_matches):
+    table = build_features(synthetic_matches)
+    # Every pairing meets twice a season (once at each ground); the first two
+    # meetings in the data have fewer than two earlier games, so no H2H value.
+    first_season = table[table.season == 2020]
+    assert first_season["h2h_home_points_per_game"].isna().all()
+    second_season = table[table.season == 2021]
+    assert second_season["h2h_home_points_per_game"].notna().any()

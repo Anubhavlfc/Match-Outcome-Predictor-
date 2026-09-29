@@ -6,11 +6,11 @@ random_state: 42
 data:
   league_code: E0            # Football-Data.co.uk code for the English Premier League
   # Seasons are identified by their starting year: 2015 means 2015/16.
-  # The history season is loaded only to warm up rolling features (so the
-  # first training season does not start with empty form); it is never
-  # used as a training row.
-  history_start_season: 2014
-  first_season: 2015         # first season whose matches become model rows
+  # Seasons before first_season are loaded only to warm up rolling features
+  # and Elo ratings (so the first training season does not start with every
+  # club rated the same); they are never used as training rows.
+  history_start_season: 2000
+  first_season: 2005         # first season whose matches become model rows
   last_season: 2025          # most recent season to download
   # Sources are tried in order. The official site is preferred; the GitHub
   # mirror republishes the same E0 CSVs and is used when the official site
@@ -28,9 +28,21 @@ features:
   venue_window: 10           # last N home (or away) matches for venue features
   venue_min_periods: 3       # need at least this many venue matches, else NaN
   use_diff_features: true    # home-minus-away comparison features
+  # Optional groups on top of the base features (src/features/build_features.py):
+  #   elo      team strength that carries across seasons
+  #   ewm      exponentially weighted form, incl. shots on target conceded
+  #   context  rest days, unbeaten/winless runs, last season's finish, head-to-head
+  # Chosen with python -m src.experiments on walk-forward seasons only.
+  groups: [elo, ewm]
+  ewm_halflife: 5            # matches; a match 5 games ago counts half as much as the last one
+  elo:                       # chosen on training seasons 2003/04-2023/24 (squared error of expected score)
+    k: 12
+    home_advantage: 60
+    season_regression: 0.15
 
 split:
-  train_seasons: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023]
+  train_seasons: [2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014,
+                  2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023]
   validation_season: 2024
   test_season: 2025
   # Walk-forward folds used for hyperparameter tuning: train on every
@@ -62,3 +74,18 @@ live:
   horizon_days: 14               # predict fixtures kicking off within this many days
   stale_result_hours: 48         # a past fixture without a result after this long means the feed is behind
   history_path: data/predictions/prediction_history.csv
+
+# Used only by python -m src.experiments (never by the production models).
+experiments:
+  other_leagues:
+    raw_dir: data/raw/other_leagues
+    leagues:
+      - {name: La Liga, slug: la-liga, code: SP1}
+      - {name: Bundesliga, slug: bundesliga, code: D1}
+      - {name: Serie A, slug: serie-a, code: I1}
+      - {name: Ligue 1, slug: ligue-1, code: F1}
+    sources:
+      - name: football-data.co.uk
+        url_template: "https://www.football-data.co.uk/mmz4281/{code}/{league_code}.csv"
+      - name: datasets/football-datasets (GitHub mirror)
+        url_template: "https://raw.githubusercontent.com/datasets/football-datasets/main/datasets/{league}/season-{code}.csv"

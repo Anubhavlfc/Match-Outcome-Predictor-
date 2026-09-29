@@ -13,6 +13,8 @@ Steps
 6. Fit on the training seasons and evaluate on the validation season
    (this is where models and feature sets are compared).
 7. Refit on train + validation and evaluate once on the untouched test season.
+   The draw rule's threshold is chosen on the walk-forward predictions of
+   step 5's folds, never on validation or test.
 8. Refit on every completed season (train + validation + test) for live
    use, save both models, and write reports/model_comparison.md. The
    reported test numbers come from step 7, before the test season was seen.
@@ -36,6 +38,7 @@ from src.data.clean import TARGET_LABELS, build_match_table
 from src.data.collect import collect_seasons, raw_path
 from src.features.build_features import build_features, feature_columns
 from src.models import evaluate as ev
+from src.models.decision import choose_draw_threshold, predict_outcome
 from src.models.split import season_split, walk_forward_folds
 from src.models.train_random_forest import (
     save_random_forest,
@@ -90,17 +93,19 @@ def run(config_path: str | None = None, quick: bool = False, force_download: boo
     matches.to_csv(processed_dir / "matches.csv", index=False)
 
     # 3. Features -------------------------------------------------------------
-    features = build_features(
-        matches,
-        form_window=feat_cfg["form_window"],
-        venue_window=feat_cfg["venue_window"],
-        venue_min_periods=feat_cfg["venue_min_periods"],
-    )
-    # The warm-up season only feeds rolling history; it is never a model row.
+    feature_settings = {
+        "form_window": feat_cfg["form_window"],
+        "venue_window": feat_cfg["venue_window"],
+        "venue_min_periods": feat_cfg["venue_min_periods"],
+        "ewm_halflife": feat_cfg["ewm_halflife"],
+        "elo": feat_cfg["elo"],
+    }
+    features = build_features(matches, **feature_settings)
+    # Warm-up seasons only feed rolling history and Elo; they are never model rows.
     features = features[features["season"] >= data_cfg["first_season"]].reset_index(drop=True)
     features.to_csv(processed_dir / "features.csv", index=False)
-    use_diffs = feat_cfg["use_diff_features"]
-    columns = feature_columns(include_diffs=use_diffs)
+    use_diffs, groups = feat_cfg["use_diff_features"], feat_cfg["groups"]
+    columns = feature_columns(include_diffs=use_diffs, groups=groups)
     logger.info("Feature table: %d matches x %d model features", len(features), len(columns))
 
     # 4. Split ----------------------------------------------------------------
@@ -142,7 +147,7 @@ def run(config_path: str | None = None, quick: bool = False, force_download: boo
 
     ablation_rows = []
     for include_diffs in (False, True):
-        cols = feature_columns(include_diffs=include_diffs)
+        cols = feature_columns(include_diffs=include_diffs, groups=groups)
         for name in MODEL_NAMES:
             model = _fit(name, split.train[cols], y_train, best_params[name], seed)
             m = ev.compute_metrics(y_val, model.predict_proba(split.validation[cols]))
@@ -177,7 +182,22 @@ def run(config_path: str | None = None, quick: bool = False, force_download: boo
     for name in MODEL_NAMES:
         out_of_sample.append(_prediction_frame(split.validation, name, "validation", val_probas[name]))
         out_of_sample.append(_prediction_frame(split.test, name, "test", test_probas[name]))
-    pd.concat(out_of_sample, ignore_index=True).to_csv(processed_dir / "out_of_sample_predictions.csv", index=False)
+    out_of_sample = pd.concat(out_of_sample, ignore_index=True)
+    out_of_sample.to_csv(processed_dir / "out_of_sample_predictions.csv", index=False)
+
+    # Draw rule: threshold chosen on the walk-forward folds only, then
+    # applied unchanged to validation and test.
+    draw_rule = {}
+    for name in MODEL_NAMES:
+        wf = out_of_sample[(out_of_sample["model"] == name) & (out_of_sample["stage"] == "walk-forward")]
+        draw_rule[name] = choose_draw_threshold(wf["target"].to_numpy(), wf[["p_away", "p_draw", "p_home"]].to_numpy())
+        threshold = draw_rule[name]["threshold"]
+        logger.info("%s draw threshold %.3f (walk-forward macro F1 %.3f vs %.3f with argmax)", name, threshold,
+                    draw_rule[name]["selected"]["macro_f1"], draw_rule[name]["argmax"]["macro_f1"])
+        val_results[f"{name} + draw rule"] = ev.compute_metrics(
+            y_val, val_probas[name], y_pred=predict_outcome(val_probas[name], threshold))
+        test_results[f"{name} + draw rule"] = ev.compute_metrics(
+            y_test, test_probas[name], y_pred=predict_outcome(test_probas[name], threshold))
 
     selected = min(MODEL_NAMES, key=lambda name: val_results[name]["log_loss"])
     gaps = {
@@ -202,11 +222,9 @@ def run(config_path: str | None = None, quick: bool = False, force_download: boo
     metadata = {
         "trained_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "feature_columns": columns,
-        "feature_settings": {
-            "form_window": feat_cfg["form_window"],
-            "venue_window": feat_cfg["venue_window"],
-            "venue_min_periods": feat_cfg["venue_min_periods"],
-        },
+        "feature_groups": groups,
+        "feature_settings": feature_settings,
+        "draw_threshold": {name: draw_rule[name]["threshold"] for name in MODEL_NAMES},
         "target_encoding": {str(k): v for k, v in TARGET_LABELS.items()},
         "trained_on_seasons": [season_label(s) for s in all_seasons],
         "evaluated_on_season": season_label(split_cfg["test_season"]),
@@ -228,6 +246,7 @@ def run(config_path: str | None = None, quick: bool = False, force_download: boo
         "walk_forward": walk_forward.to_dict(orient="records"),
         "ablation": ablation.to_dict(orient="records"),
         "selected_model": selected, "rf_minus_xgb_log_loss": gaps,
+        "draw_rule": {name: {k: v for k, v in rule.items()} for name, rule in draw_rule.items()},
         "permutation_importance_validation": {
             name: table["importance"].round(5).to_dict() for name, table in importances.items()
         },
@@ -235,7 +254,7 @@ def run(config_path: str | None = None, quick: bool = False, force_download: boo
     (reports_dir / "metrics.json").write_text(json.dumps(metrics, indent=2, default=str))
 
     report = _render_report(config, matches, features, split, walk_forward, val_results, test_results,
-                            ablation, importances, builtin, best_params, quick, selected, gaps)
+                            ablation, importances, builtin, best_params, quick, selected, gaps, draw_rule)
     (reports_dir / "model_comparison.md").write_text(report)
     logger.info("Report written to %s", reports_dir / "model_comparison.md")
     print("\nValidation season\n" + ev.comparison_table(val_results).round(4).to_string(index=False))
@@ -244,7 +263,7 @@ def run(config_path: str | None = None, quick: bool = False, force_download: boo
 
 
 def _render_report(config, matches, features, split, walk_forward, val_results, test_results,
-                   ablation, importances, builtin, best_params, quick, selected, gaps) -> str:
+                   ablation, importances, builtin, best_params, quick, selected, gaps, draw_rule) -> str:
     split_cfg = config["split"]
     train_label = f"{season_label(min(split_cfg['train_seasons']))} to {season_label(max(split_cfg['train_seasons']))}"
     val_label = season_label(split_cfg["validation_season"])
@@ -273,19 +292,21 @@ def _render_report(config, matches, features, split, walk_forward, val_results, 
 
     target_share = split.train["target"].value_counts(normalize=True)
     lines = [
-        "# Phase 1 model comparison",
+        "# Model comparison",
         "",
         "_Generated by `python -m src.pipeline`" + (" in --quick mode (reduced tuning)" if quick else "") + "._",
         "",
         "## Data",
         "",
         f"* {len(matches)} Premier League matches loaded ({season_label(matches['season'].min())} to "
-        f"{season_label(matches['season'].max())}); the first season only warms up rolling features.",
+        f"{season_label(matches['season'].max())}); seasons before {season_label(config['data']['first_season'])} "
+        "only warm up rolling features and Elo ratings.",
         f"* {len(features)} model rows. Train {len(split.train)} ({train_label}), validation "
         f"{len(split.validation)} ({val_label}), test {len(split.test)} ({test_label}).",
         f"* Training outcome mix: Home {target_share.get(2, 0):.1%}, Draw {target_share.get(1, 0):.1%}, "
         f"Away {target_share.get(0, 0):.1%}.",
-        f"* {len(feature_columns(config['features']['use_diff_features']))} features. No possession or xG "
+        f"* {len(feature_columns(config['features']['use_diff_features'], config['features']['groups']))} features "
+        f"(base set plus groups: {', '.join(config['features']['groups']) or 'none'}). No possession or xG "
         "(not in the source data).",
         "",
         "## Walk-forward validation (inside training seasons, best hyperparameters)",
@@ -316,9 +337,23 @@ def _render_report(config, matches, features, split, walk_forward, val_results, 
         "",
         ev.to_markdown(ev.comparison_table(test_results)),
         "",
+        "### Draw rule",
+        "",
+        "Plain argmax never predicts a draw, because a draw is almost never the single most likely outcome "
+        "(the bookmaker's prices never make it one either). The draw rule predicts a draw when the draw "
+        "probability reaches a threshold chosen on the walk-forward seasons to maximise macro F1. "
+        "Probabilities, log loss and the betting simulation are unchanged.",
+        "",
+        ev.to_markdown(pd.DataFrame([{
+            "Model": name, "Threshold": rule["threshold"],
+            "WF accuracy (argmax)": rule["argmax"]["accuracy"], "WF accuracy (rule)": rule["selected"]["accuracy"],
+            "WF macro F1 (argmax)": rule["argmax"]["macro_f1"], "WF macro F1 (rule)": rule["selected"]["macro_f1"],
+            "WF draws predicted": rule["selected"]["draw_share"],
+        } for name, rule in draw_rule.items()])),
+        "",
         "### Per-class performance (test)",
         "",
-        ev.to_markdown(ev.per_class_table({k: test_results[k] for k in MODEL_NAMES})),
+        ev.to_markdown(ev.per_class_table({k: test_results[k] for k in test_results if k.startswith(MODEL_NAMES)})),
         "",
         "### Confusion matrices (test)",
         "",

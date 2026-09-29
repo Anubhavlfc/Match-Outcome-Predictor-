@@ -32,6 +32,8 @@ import logging
 import numpy as np
 import pandas as pd
 
+from src.features.elo import ELO_FEATURES, EloSettings, compute_elo
+
 logger = logging.getLogger(__name__)
 
 # Columns that describe the outcome of the match itself. They must never be
@@ -90,12 +92,39 @@ DIFF_FEATURES = [
 ]
 
 
-def feature_columns(include_diffs: bool = True) -> list[str]:
+# Optional groups added on top of the base set above. config.yaml's
+# features.groups picks which ones the models use.
+EWM_TEAM_FEATURES = ["ewm_points", "ewm_goal_diff", "ewm_sot_for", "ewm_sot_against"]
+FEATURE_GROUPS: dict[str, list[str]] = {
+    # Team strength that carries across seasons (src/features/elo.py).
+    "elo": ELO_FEATURES,
+    # Exponentially weighted form: recent matches count most, older ones fade
+    # out instead of dropping off a 5-match cliff. Includes shots on target
+    # conceded, the only defensive shot statistic in the data.
+    "ewm": [f"home_{f}" for f in EWM_TEAM_FEATURES] + [f"away_{f}" for f in EWM_TEAM_FEATURES]
+           + ["ewm_points_diff", "ewm_goal_diff_diff", "ewm_sot_balance_diff"],
+    # Match context: rest, runs, last season's finish and head-to-head.
+    "context": [
+        "home_rest_days", "away_rest_days",
+        "home_unbeaten_run", "away_unbeaten_run", "home_winless_run", "away_winless_run",
+        "home_prev_season_position", "away_prev_season_position",
+        "h2h_home_points_per_game", "h2h_draw_rate",
+    ],
+}
+
+
+def feature_columns(include_diffs: bool = True, groups: list[str] | tuple[str, ...] = ()) -> list[str]:
     """The exact, ordered list of model input columns."""
+    unknown = set(groups) - set(FEATURE_GROUPS)
+    if unknown:
+        raise ValueError(f"Unknown feature groups {sorted(unknown)}; choose from {sorted(FEATURE_GROUPS)}")
     columns = [f"home_{f}" for f in TEAM_FEATURES] + [f"away_{f}" for f in TEAM_FEATURES]
     columns += HOME_VENUE_FEATURES + AWAY_VENUE_FEATURES
     if include_diffs:
         columns += DIFF_FEATURES
+    for group in FEATURE_GROUPS:
+        if group in groups:
+            columns += FEATURE_GROUPS[group]
     return columns
 
 
@@ -114,6 +143,7 @@ def matches_to_team_rows(matches: pd.DataFrame) -> pd.DataFrame:
     home["goals_against"] = matches["away_goals"]
     home["shots_for"] = matches["home_shots"]
     home["sot_for"] = matches["home_shots_on_target"]
+    home["sot_against"] = matches["away_shots_on_target"]
 
     away = matches[common].copy()
     away["team"] = matches["away_team"]
@@ -123,6 +153,7 @@ def matches_to_team_rows(matches: pd.DataFrame) -> pd.DataFrame:
     away["goals_against"] = matches["home_goals"]
     away["shots_for"] = matches["away_shots"]
     away["sot_for"] = matches["away_shots_on_target"]
+    away["sot_against"] = matches["home_shots_on_target"]
 
     rows = pd.concat([home, away], ignore_index=True)
     rows["played"] = rows["goals_for"].notna().astype(float)
@@ -262,13 +293,86 @@ def add_league_position(rows: pd.DataFrame) -> pd.DataFrame:
     return rows.merge(position_table, on=["date", "team"], how="left")
 
 
+def add_ewm_features(rows: pd.DataFrame, halflife: float, min_periods: int = 3) -> pd.DataFrame:
+    """Exponentially weighted averages of earlier matches in the current spell.
+
+    Missing values (a match without shot data) are skipped rather than
+    counted as zero.
+    """
+    keys = ["team", "spell"]
+    group_keys = [rows[k] for k in keys]
+    for column, name in (("points", "ewm_points"), ("goal_diff", "ewm_goal_diff"),
+                         ("sot_for", "ewm_sot_for"), ("sot_against", "ewm_sot_against")):
+        previous = rows.groupby(keys)[column].shift(1)
+        rows[name] = previous.groupby(group_keys).transform(
+            lambda s: s.ewm(halflife=halflife, min_periods=min_periods, ignore_na=True).mean())
+    return rows
+
+
+def _lagged_run(rows: pd.DataFrame, keys: list[str], column: str) -> pd.Series:
+    """Length of the run of earlier matches, ending just before this one, where ``column`` was 0.
+
+    Example: column = "loss" gives the current unbeaten run.
+    """
+    previous = rows.groupby(keys)[column].shift(1)
+    breaks = (previous != 0).astype(int)  # a loss, or no earlier match, ends the run
+    block = breaks.groupby([rows[k] for k in keys]).cumsum()
+    extends = (previous == 0).astype(int)
+    return extends.groupby([rows[k] for k in keys] + [block]).cumsum()
+
+
+def final_positions(rows: pd.DataFrame) -> pd.DataFrame:
+    """Final league position of every team in every season with all matches played."""
+    played = rows[rows["played"] == 1]
+    table = played.groupby(["season", "team"])[["points", "goal_diff", "goals_for"]].sum()
+    key = table["points"] * 1_000_000 + (table["goal_diff"] + 500) * 1_000 + table["goals_for"]
+    position = key.groupby(level="season").rank(method="min", ascending=False)
+    return position.rename("final_position").reset_index()
+
+
+def add_context_features(rows: pd.DataFrame) -> pd.DataFrame:
+    """Rest days, unbeaten/winless runs, last season's finish."""
+    by_team = rows.groupby("team")
+    previous_date = by_team["date"].shift(1)
+    previous_season = by_team["season"].shift(1)
+    rest = (rows["date"] - previous_date).dt.days
+    # Only within a season: the summer break is not "rest" in any useful sense.
+    rows["rest_days"] = rest.where(previous_season == rows["season"])
+
+    keys = ["team", "spell"]
+    rows["unbeaten_run"] = _lagged_run(rows, keys, "loss")
+    rows["winless_run"] = _lagged_run(rows, keys, "win")
+
+    # Last season's finishing position; a club promoted into the league is
+    # given 21 (below every Premier League club). NaN only when the previous
+    # season is not in the data at all.
+    finals = final_positions(rows)
+    finals = finals.assign(season=finals["season"] + 1).rename(columns={"final_position": "prev_season_position"})
+    rows = rows.merge(finals, on=["season", "team"], how="left")
+    seasons_with_table = set(finals["season"])
+    promoted = rows["prev_season_position"].isna() & rows["season"].isin(seasons_with_table)
+    rows.loc[promoted, "prev_season_position"] = 21.0
+    return rows
+
+
+def add_head_to_head(rows: pd.DataFrame, window: int = 6, min_periods: int = 2) -> pd.DataFrame:
+    """Points per game and draw rate in the last meetings between the same two clubs (any venue)."""
+    keys = ["team", "opponent"]
+    rows["h2h_points_per_game"] = _lagged_rolling(rows, keys, "points", window, min_periods, "mean")
+    rows["h2h_draw_rate"] = _lagged_rolling(rows, keys, "draw", window, min_periods, "mean")
+    return rows
+
+
 def build_team_features(matches: pd.DataFrame, form_window: int = 5, venue_window: int = 10,
-                        venue_min_periods: int = 3) -> pd.DataFrame:
+                        venue_min_periods: int = 3, ewm_halflife: float = 5.0) -> pd.DataFrame:
     """All per-team pre-match statistics, one row per (match, team)."""
     rows = matches_to_team_rows(matches)
     rows = add_form_features(rows, form_window)
     rows = add_season_features(rows)
     rows = add_venue_features(rows, venue_window, venue_min_periods)
+    rows = add_ewm_features(rows, ewm_halflife)
+    rows = add_head_to_head(rows)
+    rows = add_context_features(rows)
     rows = add_league_position(rows)
     return rows
 
@@ -278,17 +382,21 @@ def build_team_features(matches: pd.DataFrame, form_window: int = 5, venue_windo
 # --------------------------------------------------------------------------
 
 def build_features(matches: pd.DataFrame, form_window: int = 5, venue_window: int = 10,
-                   venue_min_periods: int = 3) -> pd.DataFrame:
+                   venue_min_periods: int = 3, ewm_halflife: float = 5.0,
+                   elo: dict | None = None) -> pd.DataFrame:
     """Build the model-ready table: identifiers, all features, and the target.
 
     ``matches`` must have the clean-table columns. Rows whose goals are NaN
     are treated as unplayed fixtures: they get features but no target.
+    Every feature group is always built; ``feature_columns`` decides which
+    ones a model sees. ``elo`` holds EloSettings fields (defaults if None).
     """
-    team_rows = build_team_features(matches, form_window, venue_window, venue_min_periods)
+    team_rows = build_team_features(matches, form_window, venue_window, venue_min_periods, ewm_halflife)
 
-    per_team = TEAM_FEATURES + [
+    per_team = TEAM_FEATURES + EWM_TEAM_FEATURES + [
         "last5_wins", "last5_draws", "last5_losses", "last5_goal_difference", "form_points_per_game",
         "season_win_rate", "season_draw_rate", "season_loss_rate",
+        "rest_days", "unbeaten_run", "winless_run", "prev_season_position",
     ]
     venue = ["venue_points_per_game", "venue_win_rate", "venue_goals_per_game", "venue_goals_conceded_per_game"]
 
@@ -316,6 +424,21 @@ def build_features(matches: pd.DataFrame, form_window: int = 5, venue_window: in
     # Positive means the home team is placed *higher* (smaller number).
     table["league_position_diff"] = table["away_league_position"] - table["home_league_position"]
     table["venue_ppg_diff"] = table["home_home_points_per_game"] - table["away_away_points_per_game"]
+
+    table["ewm_points_diff"] = table["home_ewm_points"] - table["away_ewm_points"]
+    table["ewm_goal_diff_diff"] = table["home_ewm_goal_diff"] - table["away_ewm_goal_diff"]
+    table["ewm_sot_balance_diff"] = (
+        (table["home_ewm_sot_for"] - table["home_ewm_sot_against"])
+        - (table["away_ewm_sot_for"] - table["away_ewm_sot_against"])
+    )
+    # Head-to-head from the home side's point of view.
+    h2h = home_rows[["h2h_points_per_game", "h2h_draw_rate"]].rename(
+        columns={"h2h_points_per_game": "h2h_home_points_per_game"})
+    table = table.set_index("match_id").join(h2h).reset_index()
+
+    ratings = compute_elo(matches, EloSettings.from_config(elo))
+    table = table.merge(ratings, on="match_id", how="left")
+    table["elo_diff"] = table["home_elo"] - table["away_elo"]
 
     return table.sort_values(["date", "match_id"]).reset_index(drop=True)
 

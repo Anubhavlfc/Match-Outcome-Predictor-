@@ -21,8 +21,8 @@ class DataCollectionError(RuntimeError):
     """Raised when a season could not be downloaded from any source."""
 
 
-def raw_path(raw_dir: Path, start_year: int) -> Path:
-    return raw_dir / f"E0_{season_code(start_year)}.csv"
+def raw_path(raw_dir: Path, start_year: int, league_code: str = "E0") -> Path:
+    return raw_dir / f"{league_code}_{season_code(start_year)}.csv"
 
 
 def download_season(
@@ -31,13 +31,14 @@ def download_season(
     raw_dir: Path,
     force: bool = False,
     timeout: int = 30,
+    league_code: str = "E0",
 ) -> Path:
     """Download one season, trying each configured source in order.
 
     Returns the cached path. An existing file is reused unless ``force``.
     """
     raw_dir.mkdir(parents=True, exist_ok=True)
-    target = raw_path(raw_dir, start_year)
+    target = raw_path(raw_dir, start_year, league_code)
     if target.exists() and not force:
         logger.debug("Using cached %s", target.name)
         return target
@@ -72,9 +73,10 @@ def collect_seasons(
     sources: list[dict[str, str]],
     raw_dir: Path,
     force: bool = False,
+    league_code: str = "E0",
 ) -> list[Path]:
     """Make sure every season in [first_season, last_season] is cached locally."""
     return [
-        download_season(year, sources, raw_dir, force=force)
+        download_season(year, sources, raw_dir, force=force, league_code=league_code)
         for year in range(first_season, last_season + 1)
     ]
