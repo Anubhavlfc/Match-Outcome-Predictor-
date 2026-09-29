@@ -130,6 +130,8 @@ def cumulative_profit(bet_logs: dict[str, pd.DataFrame], path: Path, title: str)
     apply_style()
     colors = {"Random Forest value bets": ENTITY_COLORS["Random Forest"],
               "XGBoost value bets": ENTITY_COLORS["XGBoost"],
+              "Random Forest value bets, tuned rule": ENTITY_COLORS["Random Forest"],
+              "XGBoost value bets, tuned rule": ENTITY_COLORS["XGBoost"],
               "Bookmaker favourite": ENTITY_COLORS["Bookmaker"],
               "Always home": NEUTRAL}
     fig, ax = plt.subplots(figsize=(8, 4))

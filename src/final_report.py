@@ -11,6 +11,7 @@ based on those numbers.
 
 from __future__ import annotations
 
+import itertools
 import json
 import logging
 from pathlib import Path
@@ -32,6 +33,14 @@ logger = logging.getLogger("final_report")
 
 MODELS = ("Random Forest", "XGBoost")
 EDGE_SENSITIVITY = (0.0, 0.05, 0.10, 0.20)
+# Value-bet rules searched on the walk-forward seasons only.
+BET_RULE_GRID = {
+    "odds_kind": ("odds", "max_odds"),
+    "edge": (0.02, 0.05, 0.10, 0.15, 0.20, 0.30),
+    "max_odds": (None, 2.5, 4.0),
+}
+MIN_TUNING_BETS = 100
+ODDS_KIND_LABEL = {"odds": "Bet365", "max_odds": "best price"}
 
 
 def _proba(frame: pd.DataFrame) -> np.ndarray:
@@ -65,7 +74,9 @@ def load_inputs(config: dict) -> dict[str, Any]:
                          config["data"]["history_start_season"])
     matches = pd.read_csv(processed / "matches.csv", parse_dates=["date"])
     fs_path = reports / "feature_selection.json"
+    optional = {name: reports / f"{name}.json" for name in ("experiments", "in_play_reference")}
     return {
+        **{name: json.loads(path.read_text()) if path.exists() else None for name, path in optional.items()},
         "matches": attach_odds(matches, odds),
         "features": pd.read_csv(processed / "features.csv", parse_dates=["date"]),
         "oos": pd.read_csv(processed / "out_of_sample_predictions.csv", parse_dates=["date"]),
@@ -73,6 +84,52 @@ def load_inputs(config: dict) -> dict[str, Any]:
         "feature_selection": json.loads(fs_path.read_text()) if fs_path.exists() else None,
         "history": load_history(resolve_path(config["live"]["history_path"])),
     }
+
+
+def _chosen_experiment(experiments: dict, groups: list[str], config: dict) -> dict | None:
+    """The experiment row that matches the production configuration, if any."""
+    start = season_label(min(config["split"]["train_seasons"]))
+    base = config["features"]["base_features"]
+    setups = {
+        "+ more history": (True, []), "+ Elo ratings": (True, ["elo"]), "+ weighted form": (True, ["elo", "ewm"]),
+        "+ match context": (True, ["elo", "ewm", "context"]), "Elo + weighted form only": (False, ["elo", "ewm"]),
+    }
+    for r in experiments["results"]:
+        setup = setups.get(r["experiment"])
+        if r["train_start"] == start and setup and setup[0] == base and sorted(setup[1]) == sorted(groups):
+            return r
+    return None
+
+
+def _gap_closed(first: dict, last: dict, experiments: dict, model: str) -> float:
+    """Share of the Phase 3 gap to the bookmaker (walk-forward log loss) that the changes removed."""
+    book = experiments["bookmaker"]["log_loss"]
+    before, after = first[f"{model} log loss"], last[f"{model} log loss"]
+    return (before - after) / (before - book) if before > book else float("nan")
+
+
+def _experiment_verdicts(experiments: dict, model: str) -> str:
+    """One sentence per experiment that did not make it into production, worded from the numbers."""
+    by_name = {r["experiment"]: r for r in experiments["results"]}
+    key = f"{model} log loss"
+    parts = []
+    if "+ match context" in by_name and "+ weighted form" in by_name:
+        change = by_name["+ match context"][key] - by_name["+ weighted form"][key]
+        parts.append(f"Match context changed log loss by {change:+.4f}, too little to justify ten more features.")
+    if "+ other top leagues" in by_name and "+ weighted form" in by_name:
+        change = by_name["+ other top leagues"][key] - by_name["+ weighted form"][key]
+        parts.append((f"Adding four more leagues to training changed it by {change:+.4f}" if abs(change) >= 0.0005
+                      else "Adding four more leagues to training left it unchanged")
+                     + (", so more data from other leagues does not help an EPL model here." if change > -0.002
+                        else "."))
+    if "+ bookmaker odds as inputs" in by_name:
+        r = by_name["+ bookmaker odds as inputs"]
+        book = experiments["bookmaker"]["log_loss"]
+        parts.append(f"Feeding the bookmaker's odds in as inputs gives {r[key]:.4f}, "
+                     + ("about the same as the bookmaker alone" if abs(r[key] - book) < 0.003 else
+                        ("better than the bookmaker alone" if r[key] < book else "still behind the bookmaker"))
+                     + ", and it can't be used live without an odds feed for upcoming fixtures.")
+    return " ".join(parts)
 
 
 def with_odds(oos: pd.DataFrame, matches: pd.DataFrame) -> pd.DataFrame:
@@ -124,14 +181,52 @@ def benchmark_table(block: pd.DataFrame, prior_target: pd.Series) -> tuple[pd.Da
 # Betting
 # --------------------------------------------------------------------------
 
-def betting_results(block: pd.DataFrame, stake: float, edge: float, seed: int) -> tuple[pd.DataFrame, dict]:
+def rule_label(rule: dict) -> str:
+    cap = f", odds up to {rule['max_odds']:.1f}" if rule["max_odds"] else ""
+    return f"edge > {rule['edge']:.0%}, {ODDS_KIND_LABEL[rule['odds_kind']]}{cap}"
+
+
+def tune_bet_rules(block: pd.DataFrame, stake: float, seed: int) -> tuple[dict[str, dict], pd.DataFrame]:
+    """Per model, the value-bet rule with the best ROI on the walk-forward seasons.
+
+    Only walk-forward predictions go in, so validation and test stay honest
+    checks. Picking the best of many rules flatters its walk-forward ROI;
+    the validation and test rows are the numbers to believe.
+    """
+    rows = []
+    for model in MODELS:
+        part = block[block["model"] == model].reset_index(drop=True)
+        if part[["max_odds_home", "max_odds_draw", "max_odds_away"]].isna().any().any():
+            raise ValueError("Walk-forward matches without best-price odds")
+        for kind, edge, cap in itertools.product(*BET_RULE_GRID.values()):
+            s = betting.summarize(betting.value_bets(part, _proba(part), stake, edge, kind, cap), seed, n_boot=200)
+            rows.append({"Model": model, "odds_kind": kind, "edge": edge, "max_odds": cap,
+                         "Bets": s["bets"], "Profit": s["profit"], "ROI": s["roi"]})
+    table = pd.DataFrame(rows)
+    rules = {}
+    for model in MODELS:
+        eligible = table[(table["Model"] == model) & (table["Bets"] >= MIN_TUNING_BETS)]
+        best = eligible.loc[eligible["ROI"].idxmax()]
+        rules[model] = {"odds_kind": best["odds_kind"], "edge": float(best["edge"]),
+                        "max_odds": None if pd.isna(best["max_odds"]) else float(best["max_odds"]),
+                        "walk_forward_roi": float(best["ROI"]), "walk_forward_bets": int(best["Bets"])}
+    return rules, table
+
+
+def betting_results(block: pd.DataFrame, stake: float, edge: float, seed: int,
+                    rules: dict[str, dict] | None = None) -> tuple[pd.DataFrame, dict]:
     one = block[block["model"] == MODELS[0]].reset_index(drop=True)
     logs: dict[str, pd.DataFrame] = {}
     for model in MODELS:
         part = block[block["model"] == model].reset_index(drop=True)
         logs[f"{model} model pick"] = betting.model_pick_bets(part, _proba(part), stake)
         logs[f"{model} value bets"] = betting.value_bets(part, _proba(part), stake, edge)
+        if rules:
+            r = rules[model]
+            logs[f"{model} value bets, tuned rule"] = betting.value_bets(
+                part, _proba(part), stake, r["edge"], r["odds_kind"], r["max_odds"])
     logs["Bookmaker favourite"] = betting.favourite_bets(one, stake)
+    logs["Bookmaker favourite, best price"] = betting.favourite_bets(one, stake, "max_odds")
     logs["Always home"] = betting.always_home_bets(one, stake)
     rows = []
     for name, bets in logs.items():
@@ -208,13 +303,15 @@ def run(config_path: str | None = None) -> Path:
                                blocks["test"][blocks["test"]["model"] == m]) for m in MODELS}
 
     # Betting --------------------------------------------------------------
+    bet_rules, rule_search = tune_bet_rules(blocks["walk-forward"], stake, seed)
     bet_tables = {}
     bet_logs = {}
     for stage, block in blocks.items():
-        bet_tables[stage], bet_logs[stage] = betting_results(block, stake, edge, seed)
+        bet_tables[stage], bet_logs[stage] = betting_results(block, stake, edge, seed, bet_rules)
     sensitivity = {stage: edge_sensitivity(blocks[stage], stake, seed) for stage in ("validation", "test")}
     eda.cumulative_profit(
-        {k: v for k, v in bet_logs["test"].items() if k in ("Random Forest value bets", "XGBoost value bets",
+        {k: v for k, v in bet_logs["test"].items() if k in ("Random Forest value bets, tuned rule",
+                                                             "XGBoost value bets, tuned rule",
                                                              "Bookmaker favourite", "Always home")},
         figures / "cumulative_profit_test.png",
         f"Betting ${stake} per bet through {season_label(test_season)} (test season)",
@@ -226,10 +323,12 @@ def run(config_path: str | None = None) -> Path:
         "betting": {k: v.to_dict(orient="records") for k, v in bet_tables.items()},
         "edge_sensitivity": {k: v.to_dict(orient="records") for k, v in sensitivity.items()},
         "stake": stake, "value_edge": edge,
+        "tuned_bet_rules": bet_rules,
+        "bet_rule_search": rule_search.to_dict(orient="records"),
     }, indent=2, default=str))
 
     text = render(config, matches, model_rows, features, metrics, inputs, share, goals, gap_table, by_season,
-                  val_table, test_table, test_entries, gaps, bet_tables, sensitivity)
+                  val_table, test_table, test_entries, gaps, bet_tables, sensitivity, bet_rules)
     path = reports / "final_report.md"
     path.write_text(text)
     logger.info("Wrote %s", path)
@@ -237,14 +336,17 @@ def run(config_path: str | None = None) -> Path:
 
 
 def render(config, matches, model_rows, features, metrics, inputs, share, goals, gap_table, by_season,
-           val_table, test_table, test_entries, gaps, bet_tables, sensitivity) -> str:
+           val_table, test_table, test_entries, gaps, bet_tables, sensitivity, bet_rules) -> str:
     split_cfg = config["split"]
     stake, edge = config["odds"]["stake"], config["odds"]["value_edge"]
     val_label, test_label = season_label(split_cfg["validation_season"]), season_label(split_cfg["test_season"])
     train_label = f"{season_label(min(split_cfg['train_seasons']))}–{season_label(max(split_cfg['train_seasons']))}"
     wf = split_cfg["walk_forward_validation_seasons"]
     wf_label = f"{season_label(min(wf))}–{season_label(max(wf))}"
-    n_features = len(feature_columns(config["features"]["use_diff_features"]))
+    groups, use_base = config["features"]["groups"], config["features"]["base_features"]
+    n_features = len(feature_columns(config["features"]["use_diff_features"], groups, base=use_base))
+    experiments, in_play = inputs.get("experiments"), inputs.get("in_play_reference")
+    draw_rule = metrics.get("draw_rule", {})
 
     t = test_table.set_index("Predictor")
     best_model = min(MODELS, key=lambda m: t.loc[m, "Log Loss"])
@@ -257,10 +359,12 @@ def render(config, matches, model_rows, features, metrics, inputs, share, goals,
 
     bt = {stage: table.set_index("Strategy") for stage, table in bet_tables.items()}
     test_bets = bt["test"]
-    headline_strategy = f"{best_model} value bets"
+    headline_strategy = f"{best_model} value bets, tuned rule"
     headline = test_bets.loc[headline_strategy]
+    fixed_rule = test_bets.loc[f"{best_model} value bets"]
     pick = test_bets.loc[f"{best_model} model pick"]
-    wf_value = bt["walk-forward"].loc[headline_strategy]
+    val_value = bt["validation"].loc[headline_strategy]
+    val_fixed = bt["validation"].loc[f"{best_model} value bets"]
 
     home_share = share["Home Win"]
     covid = home_share.get(2020, np.nan)
@@ -278,7 +382,7 @@ def render(config, matches, model_rows, features, metrics, inputs, share, goals,
     covid_hardest = all(v == "2020/21" for v in hardest.values())
     importance = metrics.get("permutation_importance_validation", {})
     top_features = {m: list(pd.Series(v).sort_values(ascending=False).index[:4]) for m, v in importance.items()}
-    market_ahead = gap_to_book > 0 and wf_value["ROI"] < 0
+    market_ahead = gap_to_book > 0 and max(headline["ROI"], val_value["ROI"]) < 0
 
     val_wf = pd.DataFrame(metrics["walk_forward"])
     wf_pivot = val_wf.pivot_table(index="validation_season", columns="model", values="log_loss")
@@ -308,10 +412,27 @@ def render(config, matches, model_rows, features, metrics, inputs, share, goals,
            "out-of-sample seasons." if beats_book_seasons else
            f"The bookmaker has the lower log loss in all {len(by_season)} out-of-sample seasons."))
     add(f"* **Simulated betting (${stake} flat stakes):** backing {best_model}'s pick in every test match gives "
-        f"{_result_phrase(pick['Profit'])} ({_pct(pick['ROI'])} ROI). Value bets (edge > {edge:.0%}) give "
-        f"{_result_phrase(headline['Profit'])} on {int(headline['Bets']):,} bets ({_pct(headline['ROI'])} ROI, "
-        f"95% CI {headline['ROI 95% CI']}). Over the five walk-forward seasons, value betting returned "
-        f"{_pct(wf_value['ROI'])} on {int(wf_value['Bets']):,} bets.")
+        f"{_result_phrase(pick['Profit'])} ({_pct(pick['ROI'])} ROI). Value bets with the fixed {edge:.0%} edge give "
+        f"{_result_phrase(fixed_rule['Profit'])} on {int(fixed_rule['Bets']):,} test bets ({_pct(fixed_rule['ROI'])}, "
+        f"95% CI {fixed_rule['ROI 95% CI']}) but {_pct(val_fixed['ROI'])} on the validation season. The rule "
+        f"searched on the walk-forward seasons ({rule_label(bet_rules[best_model])}) returned "
+        f"{_pct(headline['ROI'])} on test and {_pct(val_value['ROI'])} on validation. "
+        + ("No strategy is reliably profitable." if min(fixed_rule["ROI"], val_fixed["ROI"], headline["ROI"],
+                                                          val_value["ROI"]) < 0 else ""))
+    if draw_rule.get(best_model, {}).get("threshold") is not None:
+        dr = metrics["test"][f"{best_model} + draw rule"]
+        add(f"* **Draws:** plain argmax never predicts a draw (neither does the bookmaker). With the draw rule chosen "
+            f"on past seasons, {best_model} predicts a draw in {_pct(dr['predicted_share']['Draw'], 0)} of test "
+            f"matches and gets {_pct(dr['per_class']['Draw']['recall'], 0)} of actual draws, at "
+            f"{_pct(dr['accuracy'])} overall accuracy (argmax: {_pct(t.loc[best_model, 'Accuracy'])}).")
+    if experiments:
+        first, last = experiments["results"][0], _chosen_experiment(experiments, groups, config)
+        if last:
+            add(f"* **What improved the model:** Elo ratings, more history and weighted form cut walk-forward "
+                f"log loss from {first[f'{best_model} log loss']:.4f} to {last[f'{best_model} log loss']:.4f} "
+                f"(bookmaker {experiments['bookmaker']['log_loss']:.4f}), closing "
+                f"{_pct(_gap_closed(first, last, experiments, best_model), 0)} of the gap to the market "
+                "(section 9).")
     if market_ahead:
         add("* **Bottom line:** the models learn real, well-calibrated signal and clearly beat naive baselines, but "
             "public team statistics alone don't beat the betting market. That's the expected result for this "
@@ -328,8 +449,9 @@ def render(config, matches, model_rows, features, metrics, inputs, share, goals,
     add("| --- | --- | --- |")
     add("| Results, shots, shots on target, corners | Football-Data.co.uk E0 files (GitHub mirror `datasets/football-datasets`) | "
         f"{season_label(matches['season'].min())}–{season_label(config['data']['last_season'])}, 380 matches per season |")
-    add("| Bet365 pre-match and closing odds | Football-Data.co.uk, via `AnishKhetani/premier-league-data` | "
-        "pre-match every season, closing from 2019/20 |")
+    add("| Bet365 pre-match and closing odds, best and average price across bookmakers | Football-Data.co.uk, via "
+        "`AnishKhetani/premier-league-data` | Bet365 pre-match from 2002/03, best price from 2005/06, closing from "
+        "2019/20 |")
     add("| Fixtures, kickoff times and results for the season in progress | openfootball `football.json` | "
         "goals only, verified against all 380 matches of 2025/26 |")
     add("")
@@ -344,13 +466,16 @@ def render(config, matches, model_rows, features, metrics, inputs, share, goals,
     add("* Dates are parsed format by format, so a day and a month are never swapped. Each result must agree "
         "with the recorded score, and duplicate fixtures are rejected.")
     add("* The odds are joined by season and teams, and the pipeline stops if a match date disagrees between "
-        f"sources. All {len(model_rows):,} model matches have odds.")
+        "sources. Every match the models are evaluated on has odds.")
     add("* Possession and expected goals aren't in the sources, so they are left out rather than invented.")
     add("")
 
     add("## 3. Feature engineering")
     add("")
-    add(f"{n_features} features describe both teams as they were **before kickoff**:")
+    add(f"The production models use {n_features} features that describe both teams as they were **before kickoff**. "
+        + ("" if use_base else "Phase 3 used 42 form, season-to-date and venue features; the experiments in "
+           "section 9 showed that Elo ratings and weighted form carry the same information and more, so the "
+           "models now use those alone. The Phase 3 features are still built and tested:"))
     add("")
     add("* **Recent form** (last 5 matches): points, goals scored and conceded, average shots and shots on target.")
     add("* **Season to date:** points, goals, goal difference, shots per game, and league position rebuilt from "
@@ -359,6 +484,23 @@ def render(config, matches, model_rows, features, metrics, inputs, share, goals,
         "represents home advantage per team instead of as a constant.")
     add("* **Differences:** home minus away for form, goal difference, shots, points per game, league position "
         "and venue form.")
+    if not use_base:
+        add("")
+        add("The features the models use:")
+        add("")
+    if "elo" in groups:
+        elo = config["features"]["elo"]
+        add(f"* **Elo ratings:** one strength number per club that carries across seasons. After every match the "
+            f"winner takes rating points from the loser (K = {elo['k']}, more for a bigger margin), the home side "
+            f"gets {elo['home_advantage']} points of advantage, ratings are pulled {elo['season_regression']:.0%} "
+            "back to the mean each summer, and a promoted club starts at the average of the clubs that went down. "
+            "The settings were chosen on training seasons only.")
+    if "ewm" in groups:
+        add(f"* **Weighted form:** exponentially weighted points, goal difference, shots on target and shots on "
+            f"target conceded, with a half-life of {config['features']['ewm_halflife']} matches, so recent games "
+            "count most without a hard 5-match cut-off.")
+    if "context" in groups:
+        add("* **Match context:** rest days, unbeaten and winless runs, last season's finish and head-to-head.")
     add("")
     add("All rolling statistics use `shift(1)` within each team's history. The test suite checks this directly: "
         "changing a match's score doesn't move its own features, rewriting the future doesn't move past "
@@ -430,9 +572,49 @@ def render(config, matches, model_rows, features, metrics, inputs, share, goals,
         f"(Random Forest minus XGBoost) is {gap_ci['ci_low']:+.4f} to {gap_ci['ci_high']:+.4f}. "
         f"{selected} was selected on validation log loss. "
         + ("Per class, both models back home wins and away wins but never make a draw the single most likely "
-           "outcome, so draw recall is 0 " if never_draw else "Draws are rarely the top pick ")
+           "outcome, so with plain argmax draw recall is 0 " if never_draw else "Draws are rarely the top pick ")
         + "(details in [model_comparison.md](model_comparison.md)).")
     add("")
+    if draw_rule:
+        add("**Getting draws into the predictions.** A draw is almost never the single most likely outcome: "
+            "draws happen in about a quarter of matches, and in most games one side is a little more likely to "
+            "win than that. So picking the highest probability (argmax) never picks a draw, and the bookmaker's own "
+            "prices don't either. The probabilities are fine; the decision rule is the problem. The draw rule "
+            "predicts a draw when the draw probability reaches a threshold, chosen on the walk-forward seasons "
+            "to maximise macro F1 (which rewards getting draws right as well as wins).")
+        add("")
+        rows = []
+        for m in MODELS:
+            rule = draw_rule.get(m)
+            if not rule:
+                continue
+            for season_name, block in ((val_label, metrics["validation"]), (test_label, metrics["test"])):
+                key = f"{m} + draw rule"
+                if key not in block:
+                    continue
+                rows.append({
+                    "Model": m, "Season": season_name,
+                    "Threshold": "argmax" if rule["threshold"] is None else f"{rule['threshold']:.3f}",
+                    "Accuracy (argmax)": block[m]["accuracy"], "Accuracy (rule)": block[key]["accuracy"],
+                    "Macro F1 (argmax)": block[m]["macro_f1"], "Macro F1 (rule)": block[key]["macro_f1"],
+                    "Draws predicted": block[key]["predicted_share"]["Draw"],
+                    "Draw recall": block[key]["per_class"]["Draw"]["recall"],
+                    "Draw precision": block[key]["per_class"]["Draw"]["precision"],
+                })
+        if rows:
+            add(to_markdown(pd.DataFrame(rows)))
+            add("")
+            draw_rate = {val_label: metrics["validation"][MODELS[0]]["per_class"]["Draw"]["support"] / 380,
+                         test_label: metrics["test"][MODELS[0]]["per_class"]["Draw"]["support"] / 380}
+            precision = [r["Draw precision"] for r in rows]
+            add(f"The rule changes accuracy by {min(r['Accuracy (rule)'] - r['Accuracy (argmax)'] for r in rows) * 100:+.1f} "
+                f"to {max(r['Accuracy (rule)'] - r['Accuracy (argmax)'] for r in rows) * 100:+.1f} points and "
+                f"catches about a fifth of the draws. Its draw calls are right {_pct(min(precision), 0)}–"
+                f"{_pct(max(precision), 0)} of the time, against draw rates of "
+                f"{_pct(min(draw_rate.values()), 0)}–{_pct(max(draw_rate.values()), 0)} in these seasons, so they "
+                "are only a little better than guessing: draws stay the hardest outcome to call. Live predictions use "
+                "the rule for the predicted outcome; the saved probabilities are unchanged.")
+            add("")
     add("![Confusion matrices](confusion_matrices_test.png)")
     add("")
     add("![Calibration](calibration_test.png)")
@@ -464,7 +646,9 @@ def render(config, matches, model_rows, features, metrics, inputs, share, goals,
         largest_change = max(abs(r["validation_log_loss_selected"] - r["validation_log_loss_all"]) for r in fs.values())
         smallest_k = min(r["best_k"] for r in fs.values())
         if largest_change < 0.005:
-            add(f"Keeping only the top {smallest_k}–{max(r['best_k'] for r in fs.values())} features changes "
+            largest_k = max(r["best_k"] for r in fs.values())
+            k_text = f"{smallest_k}" if smallest_k == largest_k else f"{smallest_k}–{largest_k}"
+            add(f"Keeping only the top {k_text} features changes "
                 f"validation log loss by at most {largest_change:.4f}, which is well within noise. As in the "
                 "article, a much smaller feature set predicts just as well. The production models keep all "
                 f"{n_features} features for now; switching to the smaller set is a simplicity choice, not an "
@@ -496,13 +680,20 @@ def render(config, matches, model_rows, features, metrics, inputs, share, goals,
 
     add("## 7. Simulating investment")
     add("")
-    add(f"As in the reference article, each strategy stakes **${stake} per bet** at Bet365's pre-match odds, "
-        "the prices a bettor could actually have taken.")
+    add(f"As in the reference article, each strategy stakes **${stake} per bet**, at Bet365's pre-match odds "
+        "unless it says best price. Both are prices a bettor could actually have taken.")
     add("")
     add("* **Model pick:** back the model's most likely outcome in every match (the article's approach).")
     add(f"* **Value bets:** back an outcome only when *model probability × odds − 1 > {edge:.0%}*. This is how "
         "a probability model would really be used against a market.")
-    add("* **Baselines:** always back the home team, and always back the bookmaker's favourite.")
+    add("* **Value bets, tuned rule:** the edge threshold, whether to take Bet365's price or the best price listed "
+        "across bookmakers, and an optional cap on the odds were searched on the walk-forward seasons "
+        f"({wf_label}) only: " + "; ".join(f"{m}: {rule_label(r)} (walk-forward ROI {_pct(r['walk_forward_roi'])} "
+                                          f"on {r['walk_forward_bets']:,} bets)" for m, r in bet_rules.items())
+        + ". Choosing the best of many rules flatters its walk-forward ROI, so the validation and test rows are "
+        "the ones to believe.")
+    add("* **Baselines:** always back the home team, and always back the bookmaker's favourite (at Bet365's price "
+        "and at the best price, which shows how much of the loss is the bookmaker's margin).")
     add("")
     for stage, title in (("test", f"Test season {test_label}"), ("validation", f"Validation season {val_label}"),
                          ("walk-forward", f"Walk-forward seasons {wf_label} (pooled)")):
@@ -511,6 +702,16 @@ def render(config, matches, model_rows, features, metrics, inputs, share, goals,
         add(_format_betting(bet_tables[stage]))
         add("")
     add("![Cumulative profit](figures/cumulative_profit_test.png)")
+    add("")
+    fav = {stage: (bt[stage].loc["Bookmaker favourite", "ROI"], bt[stage].loc["Bookmaker favourite, best price", "ROI"])
+           for stage in bt}
+    gains = [fav[stage][1] - fav[stage][0] for stage in fav]
+    add("**The price matters.** Backing the bookmaker's favourite at Bet365's price returns "
+        f"{_pct(fav['walk-forward'][0])} over the walk-forward seasons, {_pct(fav['validation'][0])} on validation and "
+        f"{_pct(fav['test'][0])} on test. The same bets at the best price across bookmakers return "
+        f"{_pct(fav['walk-forward'][1])}, {_pct(fav['validation'][1])} and {_pct(fav['test'][1])}, "
+        f"{min(gains) * 100:.1f} to {max(gains) * 100:.1f} points better. Shopping for the best price helps every "
+        "strategy, but it doesn't create an edge by itself.")
     add("")
     value_odds = test_bets.loc[headline_strategy, "Avg odds"]
     fav_odds = test_bets.loc["Bookmaker favourite", "Avg odds"]
@@ -552,20 +753,72 @@ def render(config, matches, model_rows, features, metrics, inputs, share, goals,
         "next phase.")
     add("")
 
-    add("## 9. Improvements")
+    add("## 9. Improving the model")
+    add("")
+    if experiments:
+        add("After Phase 3 each candidate change was scored the same way: mean log loss over the walk-forward "
+            f"seasons {wf_label}, with the validation and test seasons left untouched and Phase 3's "
+            "hyperparameters held fixed so only the data and features change. Each row adds to the row above "
+            "unless its note says otherwise.")
+        add("")
+        exp_rows = [{"Change": r["experiment"], "Features": r["n_features"], "Trained from": r["train_start"],
+                     "RF log loss": r["Random Forest log loss"], "RF accuracy": r["Random Forest accuracy"],
+                     "XGB log loss": r["XGBoost log loss"], "XGB accuracy": r["XGBoost accuracy"]}
+                    for r in experiments["results"]]
+        bk = experiments["bookmaker"]
+        exp_rows.append({"Change": "Bookmaker (Bet365, margin removed)", "Features": "", "Trained from": "",
+                         "RF log loss": bk["log_loss"], "RF accuracy": bk["accuracy"],
+                         "XGB log loss": bk["log_loss"], "XGB accuracy": bk["accuracy"]})
+        add(to_markdown(pd.DataFrame(exp_rows), "{:.4f}"))
+        add("")
+        for r in experiments["results"]:
+            if r.get("note"):
+                add(f"* **{r['experiment']}:** {r['note']}")
+        add("")
+        add("![Experiments](figures/experiments.png)")
+        add("")
+        add("The production setup is " + ("the Phase 3 features plus " if use_base else "")
+            + " and ".join({"elo": "Elo ratings", "ewm": "weighted form", "context": "match context"}[g] for g in groups)
+            + ("" if use_base else " only") + f", trained from {season_label(min(split_cfg['train_seasons']))}: "
+            "the best row that can be used for live predictions. With its hyperparameters re-tuned, its "
+            f"walk-forward log loss is {wf_pivot[best_model].mean():.4f} for {best_model}. "
+            + _experiment_verdicts(experiments, best_model))
+        add("")
+    if in_play:
+        add("## 10. Why some projects report 60–70% accuracy")
+        add("")
+        top = in_play["results"][0]
+        ht = in_play["results"][1]
+        ids = in_play["results"][-1]
+        add("Public football-prediction projects sometimes report around 70% accuracy with the same algorithms. "
+            f"One example is [{in_play['source'].split('github.com/')[1]}]({in_play['source']}). Its inputs are the "
+            "half-time score plus the full-match shots, shots on target and red cards of the match being predicted, "
+            "scored on a random 80/20 split. It predicts at half-time with second-half statistics already known, so "
+            "none of its inputs exist before kickoff.")
+        add("")
+        add(f"Rerunning that setup on our data ({in_play['seasons']}, {in_play['matches']:,} matches):")
+        add("")
+        add(to_markdown(pd.DataFrame([{"Inputs": r["inputs"], "Random Forest": r["random_forest_accuracy"],
+                                       "Logistic regression": r["logistic_regression_accuracy"]}
+                                      for r in in_play["results"]])))
+        add("")
+        add(f"The half-time score alone gets {_pct(ht['random_forest_accuracy'], 0)}. With only the team identities, "
+            f"the one pre-match input in that set, accuracy drops to {_pct(ids['random_forest_accuracy'], 0)}. "
+            "A pre-match model should be compared with the bookmaker instead, whose own favourite wins "
+            f"{_pct(book['Accuracy'], 0)} of the time on the test season. That's the realistic ceiling here.")
+        add("")
+    add(f"## {11 if in_play else 10}. Next steps")
     add("")
     add("* **Richer inputs:** expected goals, lineups, injuries and transfers aren't in these sources, and they "
         "are what the bookmaker prices in.")
     add("* **Current-season shots:** the live feed has goals only. Allowing football-data.co.uk in the network "
         "settings would restore shot statistics (the replayed test season lost about 0.004 log loss without them).")
-    add("* **More features, tested one at a time:** head-to-head record, rest days, streaks and previous-season "
-        "finish, each kept only if walk-forward log loss improves.")
-    add("* **Draws:** a draw-aware decision rule, if hard draw predictions are ever needed. The probabilities "
-        "themselves are already calibrated.")
+    add("* **Live odds:** the odds-as-inputs variant needs pre-match odds for upcoming fixtures, which the "
+        "current sources don't provide.")
     add("* **Explanations:** SHAP values (XGBoost supports them natively) to say why a team is favoured.")
     add("")
 
-    add("## 10. Conclusion")
+    add(f"## {12 if in_play else 11}. Conclusion")
     add("")
     add(f"Using only public match statistics, both tree models beat the naive baseline "
         f"{'in every out-of-sample season' if beats_baseline_everywhere else 'in most out-of-sample seasons'}. "
@@ -576,7 +829,10 @@ def render(config, matches, model_rows, features, metrics, inputs, share, goals,
     add("")
     add(f"The bookmaker {'remains ahead' if gap_to_book > 0 else 'is not ahead'} ({book['Log Loss']:.3f} vs "
         f"{t.loc[best_model, 'Log Loss']:.3f} log loss on the test season). Value betting returned "
-        f"{_pct(headline['ROI'])} on the test season and {_pct(wf_value['ROI'])} across the walk-forward seasons. "
+        f"{_pct(fixed_rule['ROI'])} (fixed {edge:.0%} edge) and {_pct(headline['ROI'])} (rule chosen on past seasons) "
+        f"on the test season, and {_pct(val_fixed['ROI'])} and {_pct(val_value['ROI'])} on the validation season. "
+        "A negative return is not a bug in the simulation: the bookmaker's margin is built into every price, so a "
+        "model that is slightly less accurate than the market loses money on average. "
         + ("The honest conclusion is the one the reference article's title hints at but can't claim from a single "
            "season: beating the odds needs information the market doesn't already have. "
            if market_ahead else

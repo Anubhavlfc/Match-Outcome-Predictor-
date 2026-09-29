@@ -28,6 +28,8 @@ features:
   venue_window: 10           # last N home (or away) matches for venue features
   venue_min_periods: 3       # need at least this many venue matches, else NaN
   use_diff_features: true    # home-minus-away comparison features
+  base_features: false       # the 42 Phase 3 features (form, season to date, venue, differences);
+                             # dropped: Elo + weighted form alone scored better on walk-forward seasons
   # Optional groups on top of the base features (src/features/build_features.py):
   #   elo      team strength that carries across seasons
   #   ewm      exponentially weighted form, incl. shots on target conceded
@@ -48,6 +50,14 @@ split:
   # Walk-forward folds used for hyperparameter tuning: train on every
   # training season before N, validate on N.
   walk_forward_validation_seasons: [2019, 2020, 2021, 2022, 2023]
+
+# How probabilities become one predicted outcome (src/models/decision.py).
+# Probabilities, log loss and betting are unaffected either way.
+decision:
+  # true: predict a draw when its probability reaches a threshold chosen on
+  # the walk-forward seasons (macro F1). false: plain argmax, which almost
+  # never predicts a draw.
+  draw_rule: true
 
 tuning:
   random_forest_iterations: 15

@@ -54,9 +54,9 @@
       "n": 380,
       "accuracy": 0.40789473684210525,
       "macro_f1": 0.19314641744548286,
-      "log_loss": 1.0810879896180008,
-      "brier": 0.6557306521664786,
-      "ece": 0.0412280701754385,
+      "log_loss": 1.084371965161675,
+      "brier": 0.6581178014287797,
+      "ece": 0.051800554016620315,
       "confusion_matrix": [
         [
           0,
@@ -102,21 +102,21 @@
     },
     "Random Forest": {
       "n": 380,
-      "accuracy": 0.5289473684210526,
-      "macro_f1": 0.3961256094599391,
-      "log_loss": 1.0064188294814211,
-      "brier": 0.6023494246108899,
-      "ece": 0.05954038374645853,
+      "accuracy": 0.5131578947368421,
+      "macro_f1": 0.3830849553933495,
+      "log_loss": 0.9892913565773191,
+      "brier": 0.5900924096134414,
+      "ece": 0.03835371594423453,
       "confusion_matrix": [
         [
-          74,
+          68,
           0,
-          58
+          64
         ],
         [
-          35,
+          28,
           0,
-          58
+          65
         ],
         [
           28,
@@ -125,15 +125,15 @@
         ]
       ],
       "predicted_share": {
-        "Away Win": 0.3605263157894737,
+        "Away Win": 0.3263157894736842,
         "Draw": 0.0,
-        "Home Win": 0.6394736842105263
+        "Home Win": 0.6736842105263158
       },
       "per_class": {
         "Away Win": {
-          "precision": 0.5401459854014599,
-          "recall": 0.5606060606060606,
-          "f1": 0.550185873605948,
+          "precision": 0.5483870967741935,
+          "recall": 0.5151515151515151,
+          "f1": 0.53125,
           "support": 132
         },
         "Draw": {
@@ -143,47 +143,47 @@
           "support": 93
         },
         "Home Win": {
-          "precision": 0.522633744855967,
+          "precision": 0.49609375,
           "recall": 0.8193548387096774,
-          "f1": 0.6381909547738693,
+          "f1": 0.6180048661800487,
           "support": 155
         }
       }
     },
     "XGBoost": {
       "n": 380,
-      "accuracy": 0.5368421052631579,
-      "macro_f1": 0.4014357053682896,
-      "log_loss": 1.008849024772644,
-      "brier": 0.6034207083889472,
-      "ece": 0.07200087175557487,
+      "accuracy": 0.5157894736842106,
+      "macro_f1": 0.3864228944805705,
+      "log_loss": 0.988575279712677,
+      "brier": 0.5893409641305394,
+      "ece": 0.049037362321427,
       "confusion_matrix": [
         [
-          74,
+          71,
           0,
-          58
+          61
         ],
         [
-          36,
+          29,
           0,
-          57
+          64
         ],
         [
-          25,
+          30,
           0,
-          130
+          125
         ]
       ],
       "predicted_share": {
-        "Away Win": 0.35526315789473684,
+        "Away Win": 0.34210526315789475,
         "Draw": 0.0,
-        "Home Win": 0.6447368421052632
+        "Home Win": 0.6578947368421053
       },
       "per_class": {
         "Away Win": {
-          "precision": 0.5481481481481482,
-          "recall": 0.5606060606060606,
-          "f1": 0.5543071161048689,
+          "precision": 0.5461538461538461,
+          "recall": 0.5378787878787878,
+          "f1": 0.5419847328244275,
           "support": 132
         },
         "Draw": {
@@ -193,9 +193,109 @@
           "support": 93
         },
         "Home Win": {
-          "precision": 0.5306122448979592,
-          "recall": 0.8387096774193549,
-          "f1": 0.65,
+          "precision": 0.5,
+          "recall": 0.8064516129032258,
+          "f1": 0.6172839506172839,
+          "support": 155
+        }
+      }
+    },
+    "Random Forest + draw rule": {
+      "n": 380,
+      "accuracy": 0.5157894736842106,
+      "macro_f1": 0.45823942586721333,
+      "log_loss": 0.9892913565773191,
+      "brier": 0.5900924096134414,
+      "ece": 0.03835371594423453,
+      "confusion_matrix": [
+        [
+          61,
+          32,
+          39
+        ],
+        [
+          26,
+          17,
+          50
+        ],
+        [
+          22,
+          15,
+          118
+        ]
+      ],
+      "predicted_share": {
+        "Away Win": 0.2868421052631579,
+        "Draw": 0.16842105263157894,
+        "Home Win": 0.5447368421052632
+      },
+      "per_class": {
+        "Away Win": {
+          "precision": 0.5596330275229358,
+          "recall": 0.4621212121212121,
+          "f1": 0.5062240663900415,
+          "support": 132
+        },
+        "Draw": {
+          "precision": 0.265625,
+          "recall": 0.1827956989247312,
+          "f1": 0.21656050955414013,
+          "support": 93
+        },
+        "Home Win": {
+          "precision": 0.5700483091787439,
+          "recall": 0.7612903225806451,
+          "f1": 0.6519337016574586,
+          "support": 155
+        }
+      }
+    },
+    "XGBoost + draw rule": {
+      "n": 380,
+      "accuracy": 0.5026315789473684,
+      "macro_f1": 0.4602828471484031,
+      "log_loss": 0.988575279712677,
+      "brier": 0.5893409641305394,
+      "ece": 0.049037362321427,
+      "confusion_matrix": [
+        [
+          58,
+          38,
+          36
+        ],
+        [
+          25,
+          22,
+          46
+        ],
+        [
+          19,
+          25,
+          111
+        ]
+      ],
+      "predicted_share": {
+        "Away Win": 0.26842105263157895,
+        "Draw": 0.2236842105263158,
+        "Home Win": 0.5078947368421053
+      },
+      "per_class": {
+        "Away Win": {
+          "precision": 0.5686274509803921,
+          "recall": 0.4393939393939394,
+          "f1": 0.49572649572649574,
+          "support": 132
+        },
+        "Draw": {
+          "precision": 0.25882352941176473,
+          "recall": 0.23655913978494625,
+          "f1": 0.24719101123595505,
+          "support": 93
+        },
+        "Home Win": {
+          "precision": 0.5751295336787565,
+          "recall": 0.7161290322580646,
+          "f1": 0.6379310344827587,
           "support": 155
         }
       }
@@ -256,9 +356,9 @@
       "n": 380,
       "accuracy": 0.4263157894736842,
       "macro_f1": 0.1992619926199262,
-      "log_loss": 1.0837830487333295,
-      "brier": 0.6558203601108034,
-      "ece": 0.01868421052631586,
+      "log_loss": 1.0823832191198544,
+      "brier": 0.6553235110803325,
+      "ece": 0.030789473684210644,
       "confusion_matrix": [
         [
           0,
@@ -304,11 +404,11 @@
     },
     "Random Forest": {
       "n": 380,
-      "accuracy": 0.46578947368421053,
-      "macro_f1": 0.3461416824794434,
-      "log_loss": 1.0360791499751105,
-      "brier": 0.6233811527591122,
-      "ece": 0.03876562051644823,
+      "accuracy": 0.4842105263157895,
+      "macro_f1": 0.3584613480763506,
+      "log_loss": 1.0257111790795956,
+      "brier": 0.6166062875895381,
+      "ece": 0.04436052225234888,
       "confusion_matrix": [
         [
           54,
@@ -316,26 +416,26 @@
           60
         ],
         [
-          41,
-          0,
-          63
-        ],
-        [
           39,
           0,
-          123
+          65
+        ],
+        [
+          32,
+          0,
+          130
         ]
       ],
       "predicted_share": {
-        "Away Win": 0.3526315789473684,
+        "Away Win": 0.32894736842105265,
         "Draw": 0.0,
-        "Home Win": 0.6473684210526316
+        "Home Win": 0.6710526315789473
       },
       "per_class": {
         "Away Win": {
-          "precision": 0.40298507462686567,
+          "precision": 0.432,
           "recall": 0.47368421052631576,
-          "f1": 0.43548387096774194,
+          "f1": 0.45188284518828453,
           "support": 114
         },
         "Draw": {
@@ -345,30 +445,30 @@
           "support": 104
         },
         "Home Win": {
-          "precision": 0.5,
-          "recall": 0.7592592592592593,
-          "f1": 0.6029411764705882,
+          "precision": 0.5098039215686274,
+          "recall": 0.8024691358024691,
+          "f1": 0.6235011990407674,
           "support": 162
         }
       }
     },
     "XGBoost": {
       "n": 380,
-      "accuracy": 0.47368421052631576,
-      "macro_f1": 0.3513183375539997,
-      "log_loss": 1.0377060174942017,
-      "brier": 0.623988094210268,
-      "ece": 0.025860051340178436,
+      "accuracy": 0.4763157894736842,
+      "macro_f1": 0.3538270162900197,
+      "log_loss": 1.0312262773513794,
+      "brier": 0.6199405705441575,
+      "ece": 0.05733442863351421,
       "confusion_matrix": [
         [
-          54,
+          55,
           0,
-          60
+          59
         ],
         [
-          41,
+          42,
           0,
-          63
+          62
         ],
         [
           36,
@@ -377,15 +477,15 @@
         ]
       ],
       "predicted_share": {
-        "Away Win": 0.3447368421052632,
+        "Away Win": 0.35,
         "Draw": 0.0,
-        "Home Win": 0.6552631578947369
+        "Home Win": 0.65
       },
       "per_class": {
         "Away Win": {
-          "precision": 0.4122137404580153,
-          "recall": 0.47368421052631576,
-          "f1": 0.44081632653061226,
+          "precision": 0.41353383458646614,
+          "recall": 0.4824561403508772,
+          "f1": 0.44534412955465585,
           "support": 114
         },
         "Draw": {
@@ -395,9 +495,109 @@
           "support": 104
         },
         "Home Win": {
-          "precision": 0.5060240963855421,
+          "precision": 0.5101214574898786,
           "recall": 0.7777777777777778,
-          "f1": 0.6131386861313869,
+          "f1": 0.6161369193154034,
+          "support": 162
+        }
+      }
+    },
+    "Random Forest + draw rule": {
+      "n": 380,
+      "accuracy": 0.45526315789473687,
+      "macro_f1": 0.41158255498022117,
+      "log_loss": 1.0257111790795956,
+      "brier": 0.6166062875895381,
+      "ece": 0.04436052225234888,
+      "confusion_matrix": [
+        [
+          45,
+          25,
+          44
+        ],
+        [
+          34,
+          21,
+          49
+        ],
+        [
+          30,
+          25,
+          107
+        ]
+      ],
+      "predicted_share": {
+        "Away Win": 0.2868421052631579,
+        "Draw": 0.1868421052631579,
+        "Home Win": 0.5263157894736842
+      },
+      "per_class": {
+        "Away Win": {
+          "precision": 0.41284403669724773,
+          "recall": 0.39473684210526316,
+          "f1": 0.40358744394618834,
+          "support": 114
+        },
+        "Draw": {
+          "precision": 0.29577464788732394,
+          "recall": 0.20192307692307693,
+          "f1": 0.24,
+          "support": 104
+        },
+        "Home Win": {
+          "precision": 0.535,
+          "recall": 0.6604938271604939,
+          "f1": 0.5911602209944752,
+          "support": 162
+        }
+      }
+    },
+    "XGBoost + draw rule": {
+      "n": 380,
+      "accuracy": 0.4631578947368421,
+      "macro_f1": 0.42284049699780035,
+      "log_loss": 1.0312262773513794,
+      "brier": 0.6199405705441575,
+      "ece": 0.05733442863351421,
+      "confusion_matrix": [
+        [
+          48,
+          26,
+          40
+        ],
+        [
+          34,
+          22,
+          48
+        ],
+        [
+          28,
+          28,
+          106
+        ]
+      ],
+      "predicted_share": {
+        "Away Win": 0.2894736842105263,
+        "Draw": 0.2,
+        "Home Win": 0.5105263157894737
+      },
+      "per_class": {
+        "Away Win": {
+          "precision": 0.43636363636363634,
+          "recall": 0.42105263157894735,
+          "f1": 0.42857142857142855,
+          "support": 114
+        },
+        "Draw": {
+          "precision": 0.2894736842105263,
+          "recall": 0.21153846153846154,
+          "f1": 0.24444444444444444,
+          "support": 104
+        },
+        "Home Win": {
+          "precision": 0.5463917525773195,
+          "recall": 0.654320987654321,
+          "f1": 0.5955056179775281,
           "support": 162
         }
       }
@@ -405,248 +605,580 @@
   },
   "hyperparameters": {
     "Random Forest": {
-      "n_estimators": 500,
-      "min_samples_split": 10,
-      "min_samples_leaf": 20,
-      "max_features": 0.3,
+      "n_estimators": 300,
+      "min_samples_split": 2,
+      "min_samples_leaf": 10,
+      "max_features": 0.5,
       "max_depth": 4,
       "class_weight": null
     },
     "XGBoost": {
       "subsample": 0.6,
-      "reg_lambda": 1.0,
-      "reg_alpha": 0,
-      "n_estimators": 300,
-      "min_child_weight": 10,
-      "max_depth": 2,
+      "reg_lambda": 5.0,
+      "reg_alpha": 0.1,
+      "n_estimators": 500,
+      "min_child_weight": 5,
+      "max_depth": 3,
       "learning_rate": 0.01,
       "gamma": 0,
-      "colsample_bytree": 0.5
+      "colsample_bytree": 0.7
     }
   },
   "walk_forward": [
     {
       "validation_season": 2019,
-      "accuracy": 0.49736842105263157,
-      "log_loss": 1.0044294931378905,
+      "accuracy": 0.5131578947368421,
+      "log_loss": 0.9777872417501429,
       "model": "Random Forest"
     },
     {
       "validation_season": 2020,
-      "accuracy": 0.46578947368421053,
-      "log_loss": 1.0385538953325384,
+      "accuracy": 0.4921052631578947,
+      "log_loss": 1.036833998970639,
       "model": "Random Forest"
     },
     {
       "validation_season": 2021,
-      "accuracy": 0.5342105263157895,
-      "log_loss": 0.9891725564979484,
+      "accuracy": 0.5578947368421052,
+      "log_loss": 0.9603764803175202,
       "model": "Random Forest"
     },
     {
       "validation_season": 2022,
-      "accuracy": 0.5447368421052632,
-      "log_loss": 0.981114407372646,
+      "accuracy": 0.5263157894736842,
+      "log_loss": 0.9700786639982201,
       "model": "Random Forest"
     },
     {
       "validation_season": 2023,
-      "accuracy": 0.5763157894736842,
-      "log_loss": 0.9488750738523334,
+      "accuracy": 0.5684210526315789,
+      "log_loss": 0.930573334600764,
       "model": "Random Forest"
     },
     {
       "validation_season": 2019,
-      "accuracy": 0.5,
-      "log_loss": 1.0067124366760254,
+      "accuracy": 0.5105263157894737,
+      "log_loss": 0.9801687002182007,
       "model": "XGBoost"
     },
     {
       "validation_season": 2020,
-      "accuracy": 0.4710526315789474,
-      "log_loss": 1.038246989250183,
+      "accuracy": 0.4921052631578947,
+      "log_loss": 1.029036045074463,
       "model": "XGBoost"
     },
     {
       "validation_season": 2021,
-      "accuracy": 0.5368421052631579,
-      "log_loss": 0.9930604696273804,
+      "accuracy": 0.5684210526315789,
+      "log_loss": 0.9613431692123413,
       "model": "XGBoost"
     },
     {
       "validation_season": 2022,
-      "accuracy": 0.5447368421052632,
-      "log_loss": 0.9816573262214661,
+      "accuracy": 0.5289473684210526,
+      "log_loss": 0.9744616150856018,
       "model": "XGBoost"
     },
     {
       "validation_season": 2023,
-      "accuracy": 0.5789473684210527,
-      "log_loss": 0.9495828747749329,
+      "accuracy": 0.5605263157894737,
+      "log_loss": 0.9269189238548279,
       "model": "XGBoost"
     },
     {
       "validation_season": 2019,
       "accuracy": 0.45263157894736844,
-      "log_loss": 1.0645060590262054,
+      "log_loss": 1.0652205565601052,
       "model": "Class frequencies"
     },
     {
       "validation_season": 2020,
       "accuracy": 0.37894736842105264,
-      "log_loss": 1.0889988081328643,
+      "log_loss": 1.09669864178013,
       "model": "Class frequencies"
     },
     {
       "validation_season": 2021,
       "accuracy": 0.42894736842105263,
-      "log_loss": 1.0694653664347,
+      "log_loss": 1.0731476923717131,
       "model": "Class frequencies"
     },
     {
       "validation_season": 2022,
       "accuracy": 0.4842105263157895,
-      "log_loss": 1.0509836905117582,
+      "log_loss": 1.0483083584639796,
       "model": "Class frequencies"
     },
     {
       "validation_season": 2023,
       "accuracy": 0.4605263157894737,
-      "log_loss": 1.05404355376108,
+      "log_loss": 1.0558138217271216,
       "model": "Class frequencies"
     }
   ],
   "ablation": [
     {
       "Model": "Random Forest",
-      "Features": "individual only (34)",
+      "Features": "chosen set (14)",
       "Accuracy": 0.5131578947368421,
-      "Macro F1": 0.38311485642946314,
-      "Log Loss": 1.0191042458643982
+      "Macro F1": 0.3830849553933495,
+      "Log Loss": 0.9892913565773191
     },
     {
       "Model": "XGBoost",
-      "Features": "individual only (34)",
-      "Accuracy": 0.5105263157894737,
-      "Macro F1": 0.37814751067763114,
-      "Log Loss": 1.0183991193771362
+      "Features": "chosen set (14)",
+      "Accuracy": 0.5157894736842106,
+      "Macro F1": 0.3864228944805705,
+      "Log Loss": 0.988575279712677
     },
     {
       "Model": "Random Forest",
-      "Features": "individual + diffs (42)",
-      "Accuracy": 0.5289473684210526,
-      "Macro F1": 0.3961256094599391,
-      "Log Loss": 1.0064188294814211
+      "Features": "Phase 3 set (42)",
+      "Accuracy": 0.531578947368421,
+      "Macro F1": 0.3957033957033957,
+      "Log Loss": 1.0098623368814315
     },
     {
       "Model": "XGBoost",
-      "Features": "individual + diffs (42)",
+      "Features": "Phase 3 set (42)",
       "Accuracy": 0.5368421052631579,
-      "Macro F1": 0.4014357053682896,
-      "Log Loss": 1.008849024772644
+      "Macro F1": 0.4027847427301375,
+      "Log Loss": 1.0098848342895508
+    },
+    {
+      "Model": "Random Forest",
+      "Features": "Phase 3 set + elo+ewm (56)",
+      "Accuracy": 0.5105263157894737,
+      "Macro F1": 0.38108956742037997,
+      "Log Loss": 0.9917741088415657
+    },
+    {
+      "Model": "XGBoost",
+      "Features": "Phase 3 set + elo+ewm (56)",
+      "Accuracy": 0.5131578947368421,
+      "Macro F1": 0.3844211344211344,
+      "Log Loss": 0.9914436936378479
     }
   ],
-  "selected_model": "Random Forest",
+  "selected_model": "XGBoost",
   "rf_minus_xgb_log_loss": {
     "validation": {
-      "mean": -0.0024302683069128378,
-      "ci_low": -0.007485737837446373,
-      "ci_high": 0.002877763320232799
+      "mean": 0.0007160668651788108,
+      "ci_low": -0.005859465989876183,
+      "ci_high": 0.007142081560843383
     },
     "test": {
-      "mean": -0.0016268312073141056,
-      "ci_low": -0.007697743254448762,
-      "ci_high": 0.004193124620310605
+      "mean": -0.005515062861919075,
+      "ci_low": -0.012500533805219023,
+      "ci_high": 0.001506562400398237
+    }
+  },
+  "draw_rule": {
+    "Random Forest": {
+      "threshold": 0.28,
+      "selected": {
+        "threshold": 0.28,
+        "accuracy": 0.49842105263157893,
+        "macro_f1": 0.46884812158816636,
+        "draw_share": 0.29368421052631577,
+        "draw_precision": 0.26344086021505375,
+        "draw_recall": 0.3402777777777778
+      },
+      "argmax": {
+        "accuracy": 0.531578947368421,
+        "macro_f1": 0.38728931372847475,
+        "draw_share": 0.0
+      },
+      "curve": [
+        {
+          "threshold": 0.24,
+          "accuracy": 0.4131578947368421,
+          "macro_f1": 0.40939845185300633,
+          "draw_share": 0.6305263157894737,
+          "draw_precision": 0.2570951585976628,
+          "draw_recall": 0.7129629629629629
+        },
+        {
+          "threshold": 0.245,
+          "accuracy": 0.41947368421052633,
+          "macro_f1": 0.41767824015851707,
+          "draw_share": 0.6026315789473684,
+          "draw_precision": 0.25589519650655024,
+          "draw_recall": 0.6782407407407407
+        },
+        {
+          "threshold": 0.25,
+          "accuracy": 0.4321052631578947,
+          "macro_f1": 0.43051430979499233,
+          "draw_share": 0.5747368421052632,
+          "draw_precision": 0.2591575091575092,
+          "draw_recall": 0.6550925925925926
+        },
+        {
+          "threshold": 0.255,
+          "accuracy": 0.4363157894736842,
+          "macro_f1": 0.4345866466555119,
+          "draw_share": 0.5505263157894736,
+          "draw_precision": 0.25717017208413,
+          "draw_recall": 0.6226851851851852
+        },
+        {
+          "threshold": 0.26,
+          "accuracy": 0.45,
+          "macro_f1": 0.44770057677556857,
+          "draw_share": 0.5136842105263157,
+          "draw_precision": 0.25922131147540983,
+          "draw_recall": 0.5856481481481481
+        },
+        {
+          "threshold": 0.265,
+          "accuracy": 0.4573684210526316,
+          "macro_f1": 0.4517568974511965,
+          "draw_share": 0.4726315789473684,
+          "draw_precision": 0.26169265033407574,
+          "draw_recall": 0.5439814814814815
+        },
+        {
+          "threshold": 0.27,
+          "accuracy": 0.4726315789473684,
+          "macro_f1": 0.4611486165899185,
+          "draw_share": 0.4126315789473684,
+          "draw_precision": 0.2627551020408163,
+          "draw_recall": 0.47685185185185186
+        },
+        {
+          "threshold": 0.275,
+          "accuracy": 0.48789473684210527,
+          "macro_f1": 0.46682984190069005,
+          "draw_share": 0.3494736842105263,
+          "draw_precision": 0.2635542168674699,
+          "draw_recall": 0.4050925925925926
+        },
+        {
+          "threshold": 0.28,
+          "accuracy": 0.49842105263157893,
+          "macro_f1": 0.46884812158816636,
+          "draw_share": 0.29368421052631577,
+          "draw_precision": 0.26344086021505375,
+          "draw_recall": 0.3402777777777778
+        },
+        {
+          "threshold": 0.285,
+          "accuracy": 0.5047368421052632,
+          "macro_f1": 0.458463482382067,
+          "draw_share": 0.22,
+          "draw_precision": 0.2583732057416268,
+          "draw_recall": 0.25
+        },
+        {
+          "threshold": 0.29,
+          "accuracy": 0.51,
+          "macro_f1": 0.44702997428305125,
+          "draw_share": 0.16578947368421051,
+          "draw_precision": 0.2507936507936508,
+          "draw_recall": 0.18287037037037038
+        },
+        {
+          "threshold": 0.295,
+          "accuracy": 0.5184210526315789,
+          "macro_f1": 0.43639398601445106,
+          "draw_share": 0.11105263157894738,
+          "draw_precision": 0.25118483412322273,
+          "draw_recall": 0.12268518518518519
+        },
+        {
+          "threshold": 0.3,
+          "accuracy": 0.5184210526315789,
+          "macro_f1": 0.413162544325164,
+          "draw_share": 0.06421052631578947,
+          "draw_precision": 0.21311475409836064,
+          "draw_recall": 0.06018518518518518
+        },
+        {
+          "threshold": 0.305,
+          "accuracy": 0.5252631578947369,
+          "macro_f1": 0.400013565286424,
+          "draw_share": 0.03,
+          "draw_precision": 0.19298245614035087,
+          "draw_recall": 0.02546296296296296
+        },
+        {
+          "threshold": 0.31,
+          "accuracy": 0.53,
+          "macro_f1": 0.39555607485714966,
+          "draw_share": 0.011578947368421053,
+          "draw_precision": 0.2727272727272727,
+          "draw_recall": 0.013888888888888888
+        },
+        {
+          "threshold": 0.315,
+          "accuracy": 0.5289473684210526,
+          "macro_f1": 0.3877418852432755,
+          "draw_share": 0.004210526315789474,
+          "draw_precision": 0.125,
+          "draw_recall": 0.0023148148148148147
+        },
+        {
+          "threshold": 0.32,
+          "accuracy": 0.531578947368421,
+          "macro_f1": 0.3887164214836433,
+          "draw_share": 0.0010526315789473684,
+          "draw_precision": 0.5,
+          "draw_recall": 0.0023148148148148147
+        },
+        {
+          "threshold": 0.325,
+          "accuracy": 0.531578947368421,
+          "macro_f1": 0.3887164214836433,
+          "draw_share": 0.0010526315789473684,
+          "draw_precision": 0.5,
+          "draw_recall": 0.0023148148148148147
+        },
+        {
+          "threshold": 0.33,
+          "accuracy": 0.5321052631578947,
+          "macro_f1": 0.38893032586981285,
+          "draw_share": 0.0005263157894736842,
+          "draw_precision": 1.0,
+          "draw_recall": 0.0023148148148148147
+        },
+        {
+          "threshold": 0.335,
+          "accuracy": 0.531578947368421,
+          "macro_f1": 0.38728931372847475,
+          "draw_share": 0.0,
+          "draw_precision": NaN,
+          "draw_recall": 0.0
+        },
+        {
+          "threshold": 0.34,
+          "accuracy": 0.531578947368421,
+          "macro_f1": 0.38728931372847475,
+          "draw_share": 0.0,
+          "draw_precision": NaN,
+          "draw_recall": 0.0
+        }
+      ]
+    },
+    "XGBoost": {
+      "threshold": 0.27,
+      "selected": {
+        "threshold": 0.27,
+        "accuracy": 0.4936842105263158,
+        "macro_f1": 0.46783541139819246,
+        "draw_share": 0.3236842105263158,
+        "draw_precision": 0.26504065040650404,
+        "draw_recall": 0.3773148148148148
+      },
+      "argmax": {
+        "accuracy": 0.5321052631578947,
+        "macro_f1": 0.39094507799903894,
+        "draw_share": 0.002631578947368421
+      },
+      "curve": [
+        {
+          "threshold": 0.24,
+          "accuracy": 0.42473684210526313,
+          "macro_f1": 0.4212225147745949,
+          "draw_share": 0.5636842105263158,
+          "draw_precision": 0.2530345471521942,
+          "draw_recall": 0.6273148148148148
+        },
+        {
+          "threshold": 0.245,
+          "accuracy": 0.4342105263157895,
+          "macro_f1": 0.4288735698188824,
+          "draw_share": 0.5326315789473685,
+          "draw_precision": 0.25691699604743085,
+          "draw_recall": 0.6018518518518519
+        },
+        {
+          "threshold": 0.25,
+          "accuracy": 0.4436842105263158,
+          "macro_f1": 0.4370958822385626,
+          "draw_share": 0.5026315789473684,
+          "draw_precision": 0.25759162303664923,
+          "draw_recall": 0.5694444444444444
+        },
+        {
+          "threshold": 0.255,
+          "accuracy": 0.45,
+          "macro_f1": 0.4412060254762998,
+          "draw_share": 0.46210526315789474,
+          "draw_precision": 0.25626423690205014,
+          "draw_recall": 0.5208333333333334
+        },
+        {
+          "threshold": 0.26,
+          "accuracy": 0.4631578947368421,
+          "macro_f1": 0.44968882238032254,
+          "draw_share": 0.41736842105263156,
+          "draw_precision": 0.2597730138713745,
+          "draw_recall": 0.47685185185185186
+        },
+        {
+          "threshold": 0.265,
+          "accuracy": 0.47526315789473683,
+          "macro_f1": 0.4568269982956954,
+          "draw_share": 0.3721052631578947,
+          "draw_precision": 0.26025459688826025,
+          "draw_recall": 0.42592592592592593
+        },
+        {
+          "threshold": 0.27,
+          "accuracy": 0.4936842105263158,
+          "macro_f1": 0.46783541139819246,
+          "draw_share": 0.3236842105263158,
+          "draw_precision": 0.26504065040650404,
+          "draw_recall": 0.3773148148148148
+        },
+        {
+          "threshold": 0.275,
+          "accuracy": 0.4994736842105263,
+          "macro_f1": 0.46599935921891183,
+          "draw_share": 0.27578947368421053,
+          "draw_precision": 0.26145038167938933,
+          "draw_recall": 0.31712962962962965
+        },
+        {
+          "threshold": 0.28,
+          "accuracy": 0.5031578947368421,
+          "macro_f1": 0.4591150914464061,
+          "draw_share": 0.2305263157894737,
+          "draw_precision": 0.2534246575342466,
+          "draw_recall": 0.2569444444444444
+        },
+        {
+          "threshold": 0.285,
+          "accuracy": 0.5052631578947369,
+          "macro_f1": 0.4483730188356572,
+          "draw_share": 0.18157894736842106,
+          "draw_precision": 0.2463768115942029,
+          "draw_recall": 0.19675925925925927
+        },
+        {
+          "threshold": 0.29,
+          "accuracy": 0.5157894736842106,
+          "macro_f1": 0.4470168913944191,
+          "draw_share": 0.14157894736842105,
+          "draw_precision": 0.26022304832713755,
+          "draw_recall": 0.16203703703703703
+        },
+        {
+          "threshold": 0.295,
+          "accuracy": 0.5184210526315789,
+          "macro_f1": 0.4372053993300888,
+          "draw_share": 0.11052631578947368,
+          "draw_precision": 0.2523809523809524,
+          "draw_recall": 0.12268518518518519
+        },
+        {
+          "threshold": 0.3,
+          "accuracy": 0.5252631578947369,
+          "macro_f1": 0.43641326196689406,
+          "draw_share": 0.0868421052631579,
+          "draw_precision": 0.2787878787878788,
+          "draw_recall": 0.10648148148148148
+        },
+        {
+          "threshold": 0.305,
+          "accuracy": 0.5284210526315789,
+          "macro_f1": 0.42788108145081566,
+          "draw_share": 0.06263157894736843,
+          "draw_precision": 0.2857142857142857,
+          "draw_recall": 0.0787037037037037
+        },
+        {
+          "threshold": 0.31,
+          "accuracy": 0.5294736842105263,
+          "macro_f1": 0.42047737100650934,
+          "draw_share": 0.04368421052631579,
+          "draw_precision": 0.3132530120481928,
+          "draw_recall": 0.06018518518518518
+        },
+        {
+          "threshold": 0.315,
+          "accuracy": 0.5263157894736842,
+          "macro_f1": 0.402960757584751,
+          "draw_share": 0.02894736842105263,
+          "draw_precision": 0.21818181818181817,
+          "draw_recall": 0.027777777777777776
+        },
+        {
+          "threshold": 0.32,
+          "accuracy": 0.5284210526315789,
+          "macro_f1": 0.39796255056829066,
+          "draw_share": 0.020526315789473684,
+          "draw_precision": 0.1794871794871795,
+          "draw_recall": 0.016203703703703703
+        },
+        {
+          "threshold": 0.325,
+          "accuracy": 0.53,
+          "macro_f1": 0.3959303866303214,
+          "draw_share": 0.014210526315789474,
+          "draw_precision": 0.18518518518518517,
+          "draw_recall": 0.011574074074074073
+        },
+        {
+          "threshold": 0.33,
+          "accuracy": 0.531578947368421,
+          "macro_f1": 0.3949438543920407,
+          "draw_share": 0.008421052631578947,
+          "draw_precision": 0.25,
+          "draw_recall": 0.009259259259259259
+        },
+        {
+          "threshold": 0.335,
+          "accuracy": 0.531578947368421,
+          "macro_f1": 0.3933660251259872,
+          "draw_share": 0.00631578947368421,
+          "draw_precision": 0.25,
+          "draw_recall": 0.006944444444444444
+        },
+        {
+          "threshold": 0.34,
+          "accuracy": 0.5321052631578947,
+          "macro_f1": 0.39364367245657567,
+          "draw_share": 0.005263157894736842,
+          "draw_precision": 0.3,
+          "draw_recall": 0.006944444444444444
+        }
+      ]
     }
   },
   "permutation_importance_validation": {
     "Random Forest": {
-      "season_goal_difference_diff": 0.00736,
-      "season_ppg_diff": 0.00659,
-      "league_position_diff": 0.004,
-      "venue_ppg_diff": 0.00328,
-      "home_home_goals_per_game": 0.00087,
-      "shots_on_target_diff": 0.0007,
-      "home_season_shots_on_target_per_game": 0.00069,
-      "away_away_goals_per_game": 0.0006,
-      "home_season_points_per_game": 0.00054,
-      "home_last5_avg_shots": 0.00054,
-      "away_season_shots_on_target_per_game": 0.00052,
-      "away_away_points_per_game": 0.00045,
-      "goal_difference_diff": 0.00044,
-      "away_away_goals_conceded_per_game": 0.00036,
-      "shots_diff": 0.00032,
-      "home_league_position": 0.00032,
-      "home_home_goals_conceded_per_game": 0.00027,
-      "away_away_win_rate": 0.00018,
-      "home_season_games_played": 0.00016,
-      "home_season_goals_per_game": 0.00014,
-      "away_season_goals_conceded_per_game": 0.00011,
-      "away_last5_goals_conceded": 0.00011,
-      "away_season_games_played": 7e-05,
-      "form_points_diff": 4e-05,
-      "home_last5_goals_scored": 3e-05,
-      "away_league_position": 3e-05,
-      "away_last5_points": 2e-05,
-      "away_last5_goals_scored": -1e-05,
-      "home_season_goal_difference_per_game": -3e-05,
-      "home_last5_goals_conceded": -3e-05,
-      "home_home_points_per_game": -6e-05,
-      "away_last5_avg_shots_on_target": -6e-05,
-      "home_last5_avg_shots_on_target": -6e-05,
-      "home_home_win_rate": -7e-05,
-      "away_season_goals_per_game": -8e-05,
-      "away_season_goal_difference_per_game": -8e-05,
-      "home_season_goals_conceded_per_game": -0.00012,
-      "away_season_points_per_game": -0.00015,
-      "home_last5_points": -0.00017,
-      "home_season_shots_per_game": -0.00026,
-      "away_season_shots_per_game": -0.00098,
-      "away_last5_avg_shots": -0.00099
+      "elo_diff": 0.05734,
+      "ewm_sot_balance_diff": 0.01743,
+      "home_elo": 0.00218,
+      "ewm_goal_diff_diff": 0.00097,
+      "ewm_points_diff": 0.00037,
+      "away_ewm_points": 8e-05,
+      "away_ewm_sot_for": 3e-05,
+      "away_ewm_goal_diff": -6e-05,
+      "home_ewm_sot_for": -0.00016,
+      "home_ewm_points": -0.0002,
+      "home_ewm_sot_against": -0.0004,
+      "away_ewm_sot_against": -0.00055,
+      "home_ewm_goal_diff": -0.00059,
+      "away_elo": -0.00136
     },
     "XGBoost": {
-      "season_goal_difference_diff": 0.01023,
-      "season_ppg_diff": 0.00623,
-      "league_position_diff": 0.00383,
-      "venue_ppg_diff": 0.00322,
-      "shots_on_target_diff": 0.0012,
-      "home_home_goals_per_game": 0.00112,
-      "away_season_shots_on_target_per_game": 0.00097,
-      "goal_difference_diff": 0.00082,
-      "home_season_shots_per_game": 0.00069,
-      "away_away_goals_conceded_per_game": 0.00068,
-      "shots_diff": 0.00059,
-      "home_last5_avg_shots": 0.00052,
-      "away_season_goal_difference_per_game": 0.00045,
-      "home_last5_avg_shots_on_target": 0.00043,
-      "away_season_goals_conceded_per_game": 0.00031,
-      "home_last5_points": 0.00026,
-      "home_home_goals_conceded_per_game": 0.00023,
-      "away_away_points_per_game": 0.00023,
-      "home_league_position": 0.00023,
-      "home_season_goals_per_game": 0.00014,
-      "home_season_points_per_game": 0.00011,
-      "away_season_games_played": 9e-05,
-      "away_last5_goals_conceded": 9e-05,
-      "away_last5_points": 8e-05,
-      "home_season_goal_difference_per_game": 7e-05,
-      "away_season_points_per_game": 6e-05,
-      "home_home_win_rate": 6e-05,
-      "home_home_points_per_game": 6e-05,
-      "home_season_games_played": 5e-05,
-      "away_away_goals_per_game": 4e-05,
-      "away_away_win_rate": 0.0,
-      "away_league_position": 0.0,
-      "away_last5_goals_scored": -3e-05,
-      "home_last5_goals_scored": -3e-05,
-      "home_last5_goals_conceded": -6e-05,
-      "form_points_diff": -9e-05,
-      "home_season_shots_on_target_per_game": -0.00013,
-      "away_last5_avg_shots_on_target": -0.00018,
-      "home_season_goals_conceded_per_game": -0.00026,
-      "away_season_goals_per_game": -0.00034,
-      "away_season_shots_per_game": -0.0005,
-      "away_last5_avg_shots": -0.00091
+      "elo_diff": 0.04093,
+      "ewm_sot_balance_diff": 0.01828,
+      "home_elo": 0.00631,
+      "home_ewm_points": 0.00139,
+      "away_ewm_sot_against": 0.00056,
+      "away_ewm_points": 0.00054,
+      "away_ewm_sot_for": 0.00048,
+      "ewm_points_diff": 0.00041,
+      "away_ewm_goal_diff": -0.0002,
+      "ewm_goal_diff_diff": -0.00046,
+      "home_ewm_sot_for": -0.00065,
+      "home_ewm_sot_against": -0.00102,
+      "away_elo": -0.00135,
+      "home_ewm_goal_diff": -0.00178
     }
   }
 }

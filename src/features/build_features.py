@@ -113,15 +113,23 @@ FEATURE_GROUPS: dict[str, list[str]] = {
 }
 
 
-def feature_columns(include_diffs: bool = True, groups: list[str] | tuple[str, ...] = ()) -> list[str]:
-    """The exact, ordered list of model input columns."""
+def feature_columns(include_diffs: bool = True, groups: list[str] | tuple[str, ...] = (),
+                    base: bool = True) -> list[str]:
+    """The exact, ordered list of model input columns.
+
+    ``base`` includes the 42 original features (form, season to date, venue,
+    and their differences when ``include_diffs``); ``groups`` adds optional
+    groups from FEATURE_GROUPS.
+    """
     unknown = set(groups) - set(FEATURE_GROUPS)
     if unknown:
         raise ValueError(f"Unknown feature groups {sorted(unknown)}; choose from {sorted(FEATURE_GROUPS)}")
-    columns = [f"home_{f}" for f in TEAM_FEATURES] + [f"away_{f}" for f in TEAM_FEATURES]
-    columns += HOME_VENUE_FEATURES + AWAY_VENUE_FEATURES
-    if include_diffs:
-        columns += DIFF_FEATURES
+    columns: list[str] = []
+    if base:
+        columns += [f"home_{f}" for f in TEAM_FEATURES] + [f"away_{f}" for f in TEAM_FEATURES]
+        columns += HOME_VENUE_FEATURES + AWAY_VENUE_FEATURES
+        if include_diffs:
+            columns += DIFF_FEATURES
     for group in FEATURE_GROUPS:
         if group in groups:
             columns += FEATURE_GROUPS[group]

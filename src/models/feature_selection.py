@@ -75,7 +75,8 @@ def run(config_path: str | None = None) -> dict:
     split_cfg = config["split"]
     features = pd.read_csv(resolve_path(config["data"]["processed_dir"]) / "features.csv", parse_dates=["date"])
     params = json.loads((resolve_path(config["output"]["reports_dir"]) / "metrics.json").read_text())["hyperparameters"]
-    columns = feature_columns(config["features"]["use_diff_features"])
+    feat_cfg = config["features"]
+    columns = feature_columns(feat_cfg["use_diff_features"], feat_cfg["groups"], base=feat_cfg["base_features"])
     folds = split_cfg["walk_forward_validation_seasons"]
     train = features[features["season"].isin(split_cfg["train_seasons"])].reset_index(drop=True)
     validation = features[features["season"] == split_cfg["validation_season"]]
@@ -84,7 +85,7 @@ def run(config_path: str | None = None) -> dict:
     for name in ("Random Forest", "XGBoost"):
         ranking = walk_forward_ranking(train, columns, name, params[name], folds, seed)
         curve = []
-        for k in [*SUBSET_SIZES, len(columns)]:
+        for k in [*[size for size in SUBSET_SIZES if size < len(columns)], len(columns)]:
             subset = list(ranking.index[:k])
             curve.append({"k": k, "walk_forward_log_loss": walk_forward_logloss(train, subset, name, params[name], folds, seed)})
             logger.info("%s top-%d: walk-forward log loss %.4f", name, k, curve[-1]["walk_forward_log_loss"])
@@ -120,7 +121,7 @@ def _plot(results: dict, n_features: int, path) -> None:
     ax.set_xlabel("Number of features kept (ranked by walk-forward permutation importance)")
     ax.set_ylabel("Mean walk-forward log loss")
     ax.set_title("Feature selection: fewer features vs log loss (lower is better)")
-    ax.set_xticks([*SUBSET_SIZES, n_features])
+    ax.set_xticks([*[size for size in SUBSET_SIZES if size < n_features], n_features])
     ax.legend()
     fig.tight_layout()
     path.parent.mkdir(parents=True, exist_ok=True)

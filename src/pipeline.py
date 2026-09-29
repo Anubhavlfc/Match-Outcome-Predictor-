@@ -69,6 +69,12 @@ def _prediction_frame(rows: pd.DataFrame, model: str, stage: str, proba: np.ndar
     return frame
 
 
+def _feature_args(config: dict[str, Any]) -> dict[str, Any]:
+    feat_cfg = config["features"]
+    return {"include_diffs": feat_cfg["use_diff_features"], "groups": feat_cfg["groups"],
+            "base": feat_cfg["base_features"]}
+
+
 def _walk_forward_summary(search_results: pd.DataFrame, best_params: dict[str, Any]) -> pd.DataFrame:
     best = search_results[search_results["params"].apply(lambda p: p == best_params)]
     return best[["validation_season", "accuracy", "log_loss"]].reset_index(drop=True)
@@ -104,8 +110,8 @@ def run(config_path: str | None = None, quick: bool = False, force_download: boo
     # Warm-up seasons only feed rolling history and Elo; they are never model rows.
     features = features[features["season"] >= data_cfg["first_season"]].reset_index(drop=True)
     features.to_csv(processed_dir / "features.csv", index=False)
-    use_diffs, groups = feat_cfg["use_diff_features"], feat_cfg["groups"]
-    columns = feature_columns(include_diffs=use_diffs, groups=groups)
+    use_diffs, groups, use_base = feat_cfg["use_diff_features"], feat_cfg["groups"], feat_cfg["base_features"]
+    columns = feature_columns(include_diffs=use_diffs, groups=groups, base=use_base)
     logger.info("Feature table: %d matches x %d model features", len(features), len(columns))
 
     # 4. Split ----------------------------------------------------------------
@@ -145,15 +151,26 @@ def run(config_path: str | None = None, quick: bool = False, force_download: boo
     val_results = ev.baseline_metrics(y_train, y_val)
     val_results.update({name: ev.compute_metrics(y_val, proba) for name, proba in val_probas.items()})
 
+    # Validation-season check of the chosen feature set against the
+    # alternatives (the choice itself was made on walk-forward seasons with
+    # python -m src.experiments).
+    variants = {
+        f"chosen set ({len(columns)})": columns,
+        "Phase 3 set (42)": feature_columns(True),
+        "Phase 3 set + " + "+".join(groups): feature_columns(True, groups),
+        "+".join(groups) + " only": feature_columns(True, groups, base=False),
+    }
+    seen: list[list[str]] = []
     ablation_rows = []
-    for include_diffs in (False, True):
-        cols = feature_columns(include_diffs=include_diffs, groups=groups)
+    for label, cols in variants.items():
+        if not cols or cols in seen:
+            continue
+        seen.append(cols)
         for name in MODEL_NAMES:
             model = _fit(name, split.train[cols], y_train, best_params[name], seed)
             m = ev.compute_metrics(y_val, model.predict_proba(split.validation[cols]))
             ablation_rows.append({
-                "Model": name,
-                "Features": f"individual + diffs ({len(cols)})" if include_diffs else f"individual only ({len(cols)})",
+                "Model": name, "Features": label if "(" in label else f"{label} ({len(cols)})",
                 "Accuracy": m["accuracy"], "Macro F1": m["macro_f1"], "Log Loss": m["log_loss"],
             })
     ablation = pd.DataFrame(ablation_rows)
@@ -223,8 +240,11 @@ def run(config_path: str | None = None, quick: bool = False, force_download: boo
         "trained_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "feature_columns": columns,
         "feature_groups": groups,
+        "base_features": use_base,
         "feature_settings": feature_settings,
-        "draw_threshold": {name: draw_rule[name]["threshold"] for name in MODEL_NAMES},
+        # None = plain argmax for the predicted outcome (config decision.draw_rule: false).
+        "draw_threshold": {name: draw_rule[name]["threshold"] if config["decision"]["draw_rule"] else None
+                           for name in MODEL_NAMES},
         "target_encoding": {str(k): v for k, v in TARGET_LABELS.items()},
         "trained_on_seasons": [season_label(s) for s in all_seasons],
         "evaluated_on_season": season_label(split_cfg["test_season"]),
@@ -305,9 +325,9 @@ def _render_report(config, matches, features, split, walk_forward, val_results, 
         f"{len(split.validation)} ({val_label}), test {len(split.test)} ({test_label}).",
         f"* Training outcome mix: Home {target_share.get(2, 0):.1%}, Draw {target_share.get(1, 0):.1%}, "
         f"Away {target_share.get(0, 0):.1%}.",
-        f"* {len(feature_columns(config['features']['use_diff_features'], config['features']['groups']))} features "
-        f"(base set plus groups: {', '.join(config['features']['groups']) or 'none'}). No possession or xG "
-        "(not in the source data).",
+        f"* {len(feature_columns(**_feature_args(config)))} features "
+        f"({'base set plus ' if config['features']['base_features'] else ''}groups: "
+        f"{', '.join(config['features']['groups']) or 'none'}). No possession or xG (not in the source data).",
         "",
         "## Walk-forward validation (inside training seasons, best hyperparameters)",
         "",

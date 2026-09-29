@@ -62,3 +62,15 @@ def test_attach_odds_rejects_date_mismatch():
     odds.loc[0, "date"] = pd.Timestamp("2025-09-01")
     with pytest.raises(DataValidationError):
         attach_odds(matches, odds)
+
+
+def test_value_bets_can_use_best_price_and_cap_odds():
+    frame = _frame().assign(max_odds_home=[2.2, 1.6, 3.2], max_odds_draw=[3.6, 4.2, 3.4],
+                            max_odds_away=[4.4, 6.5, 2.6])
+    proba = np.array([[0.10, 0.20, 0.70], [0.15, 0.20, 0.65], [0.44, 0.28, 0.28]])
+    best = betting.value_bets(frame, proba, 100, edge=0.05, odds_kind="max_odds")
+    # Match 1 now wins at the best price 2.2 instead of Bet365's 2.0.
+    assert best.loc[best["match_id"] == 1, "profit"].iloc[0] == pytest.approx(120.0)
+    # Capping odds at 2.3 removes the away bet at 2.6, even though it has an edge.
+    capped = betting.value_bets(frame, proba, 100, edge=0.05, odds_kind="max_odds", max_odds=2.3)
+    assert capped["match_id"].tolist() == [1]

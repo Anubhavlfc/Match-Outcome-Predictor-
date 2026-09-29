@@ -34,7 +34,7 @@ from sklearn.metrics import accuracy_score, log_loss  # noqa: E402
 from src.data.clean import build_match_table  # noqa: E402
 from src.data.collect import collect_seasons, raw_path  # noqa: E402
 from src.data.odds import attach_odds, download_odds, implied_probabilities, odds_matrix  # noqa: E402
-from src.features.build_features import FEATURE_GROUPS, build_features, feature_columns  # noqa: E402
+from src.features.build_features import build_features, feature_columns  # noqa: E402
 from src.features.elo import EloSettings, elo_fit_error  # noqa: E402
 from src.models.evaluate import to_markdown  # noqa: E402
 from src.models.train_random_forest import build_random_forest  # noqa: E402
@@ -68,10 +68,7 @@ class Experiment:
     note: str = field(default="", compare=False)
 
     def columns(self) -> list[str]:
-        if self.base_features:
-            cols = feature_columns(True, list(self.groups))
-        else:
-            cols = [c for g in FEATURE_GROUPS if g in self.groups for c in FEATURE_GROUPS[g]]
+        cols = feature_columns(True, list(self.groups), base=self.base_features)
         return cols + (MARKET_FEATURES if self.market else [])
 
 
@@ -83,11 +80,13 @@ EXPERIMENTS = [
     Experiment("+ match context", ("elo", "ewm", "context"), 2005,
                note="rest days, unbeaten/winless runs, last season's finish, head-to-head"),
     Experiment("Elo + weighted form only", ("elo", "ewm"), 2005, base_features=False,
-               note="the 42 base features dropped"),
+               note="the '+ weighted form' setup without the 42 Phase 3 features"),
     Experiment("+ other top leagues", ("elo", "ewm"), 2005, pooled_leagues=True,
-               note="La Liga, Bundesliga, Serie A and Ligue 1 added to training; scored on the EPL only"),
+               note="the '+ weighted form' setup with La Liga, Bundesliga, Serie A and Ligue 1 matches added "
+                    "to training; still scored on the Premier League only"),
     Experiment("+ bookmaker odds as inputs", ("elo", "ewm"), 2005, market=True,
-               note="market-informed variant; needs live odds to be used for real predictions"),
+               note="the '+ weighted form' setup plus Bet365's implied probabilities; would need live odds "
+                    "for real predictions"),
 ]
 
 
@@ -105,7 +104,7 @@ def load_epl(config: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
                               feat_cfg["venue_min_periods"], feat_cfg["ewm_halflife"], feat_cfg["elo"])
     odds_cfg = config["odds"]
     odds = download_odds(odds_cfg["url"], resolve_path(odds_cfg["cache"]), odds_cfg["bookmaker"], first)
-    features = attach_odds(features, odds)
+    features = attach_odds(features, odds).copy()
     has_odds = features["odds_home"].notna()
     implied = implied_probabilities(odds_matrix(features[has_odds]))
     for i, column in enumerate(["market_p_away", "market_p_draw", "market_p_home"]):
@@ -197,24 +196,22 @@ def tune_elo(matches: pd.DataFrame, seasons: list[int]) -> dict:
 # --------------------------------------------------------------------------
 
 def _plot(table: pd.DataFrame, bookmaker: dict, path) -> None:
+    """Dot plot: log loss does not start at zero, so bars would exaggerate the differences."""
     apply_style()
     fig, ax = plt.subplots(figsize=(9, 4.8))
     y = np.arange(len(table))[::-1]
-    height = 0.38
-    ax.barh(y + height / 2, table["Random Forest log loss"], height, color=ENTITY_COLORS["Random Forest"],
-            label="Random Forest")
-    ax.barh(y - height / 2, table["XGBoost log loss"], height, color=ENTITY_COLORS["XGBoost"], label="XGBoost")
+    for i in range(len(table)):
+        pair = table.iloc[i][["Random Forest log loss", "XGBoost log loss"]]
+        ax.plot([pair.min(), pair.max()], [y[i], y[i]], color=NEUTRAL, linewidth=1, zorder=1)
+    ax.scatter(table["Random Forest log loss"], y, s=60, color=ENTITY_COLORS["Random Forest"], label="Random Forest",
+               zorder=2)
+    ax.scatter(table["XGBoost log loss"], y, s=60, color=ENTITY_COLORS["XGBoost"], label="XGBoost", zorder=2)
     ax.axvline(bookmaker["log_loss"], color=ENTITY_COLORS["Bookmaker"], linewidth=2, label="Bookmaker")
     ax.set_yticks(y, table["experiment"])
-    low = min(bookmaker["log_loss"], table[["Random Forest log loss", "XGBoost log loss"]].min().min())
-    high = table[["Random Forest log loss", "XGBoost log loss"]].max().max()
-    ax.set_xlim(low - 0.01, high + 0.005)
     ax.set_xlabel("Mean walk-forward log loss, 2019/20 to 2023/24 (lower is better)")
     ax.set_title("What improved the model")
     ax.legend(loc="lower right")
     ax.grid(axis="y", visible=False)
-    for spine in ("left",):
-        ax.spines[spine].set_color(NEUTRAL)
     fig.tight_layout()
     path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(path, dpi=130)
